@@ -8,14 +8,13 @@ using namespace chrono;
 
 int main() {
     try {
-        int tries = 100000;
+        int tries = 10000;
         nanoseconds totalDuration = nanoseconds::zero();
         for (int i = 0; i < tries; i++) {
-            int rn = 1 + rand() % 1000;
-            string js = "{\"test\": " + rn + string("}");
-            
+            int rn = 1000 + rand() % 9999;
+            string js = "{\"test\": " + to_string(rn) + string("}");
             steady_clock::time_point start = high_resolution_clock::now();
-            Json::JsonObject jsObject = Json::deserialize(js);
+            Json::JsonValue json = Json::deserialize(js);
             steady_clock::time_point end = high_resolution_clock::now();
             totalDuration += duration_cast<nanoseconds>(end-start);
         }

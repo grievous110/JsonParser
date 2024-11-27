@@ -18,57 +18,63 @@ namespace Json {
 	};
 
 	class JsonValue;
-	struct KeyValueResult;
-
 	using JsonObject = std::map<std::string, JsonValue>;
 	using JsonArray = std::vector<JsonValue>;
 	using JsonEntry = std::pair<std::string, JsonValue>;
 
 	enum JsonType {
 		BOOL,
-		NUMBER,
+		INTEGER,
+		DOUBLE,
 		STRING,
 		OBJECT,
 		ARRAY,
 		null
 	};
 
-	//std::ostream& operator<<(std::ostream& os, const JsonValue& value);
+	std::ostream& operator<<(std::ostream& os, const JsonValue& value);
 
-	std::string serialize(const JsonObject& object);
-	std::string serializeArray(const JsonArray& array);
+	std::string serialize(const JsonValue& object);
+	JsonValue deserialize(const std::string& json);
 
-	JsonObject deserialize(const std::string& json);
-	JsonArray deserializeArray(const std::string& array);
-
-	inline std::string jsonTypeToString(JsonType type) {
+	inline std::string jsonTypeToString(const JsonType& type) {
         switch (type) {
-            case BOOL:   return "BOOL";
-            case NUMBER: return "NUMBER";
-            case STRING: return "STRING";
-            case OBJECT: return "OBJECT";
-            case ARRAY:  return "ARRAY";
-            case null:   return "NULL";
-            default:     return "UNKNOWN";
+            case BOOL:   	return "BOOL";
+            case INTEGER: 	return "INTEGER";
+			case DOUBLE: 	return "DOUBLE";
+            case STRING: 	return "STRING";
+            case OBJECT: 	return "OBJECT";
+            case ARRAY:  	return "ARRAY";
+            case null:   	return "NULL";
+            default:     	return "UNKNOWN";
         }
     }
 
 	class JsonValue {
 	private:
-		std::string m_value;
+		union {
+			bool b_value;
+			int i_value;
+			double d_value;
+			std::string* s_value;
+			JsonObject* o_value;
+			JsonArray* a_value;
+		};
+
 		JsonType m_type;
 
 	public:
-		JsonValue() : JsonValue(nullptr) {}
-		JsonValue(const bool& value) : m_value(value ? "true" : "false"), m_type(BOOL) {}
-		JsonValue(const int& value) : m_value(std::to_string(value)), m_type(NUMBER) {}
-		JsonValue(const double& value) : m_value(std::to_string(value)), m_type(NUMBER) {}
-		JsonValue(const char* value) : m_value(value), m_type(STRING) {}
-		JsonValue(const std::string& value) : m_value(value), m_type(STRING) {}
-		JsonValue(const JsonObject& value) : m_value(serialize(value)), m_type(OBJECT) {}
-		JsonValue(const JsonArray& value) : m_value(serializeArray(value)), m_type(ARRAY) {}
-		JsonValue(const JsonValue& value) : m_value(value.m_value), m_type(value.m_type) {}
-		JsonValue(std::nullptr_t) : m_value("null"), m_type(null) {}
+		JsonValue() noexcept : m_type(null) {}
+		JsonValue(bool value) : b_value(value), m_type(BOOL) {}
+		JsonValue(int value) : i_value(value), m_type(INTEGER) {}
+		JsonValue(double value) : d_value(value), m_type(DOUBLE) {}
+		JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(STRING) {}
+		JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(OBJECT) {}
+		JsonValue(const JsonArray& value) : a_value(new JsonArray(value)), m_type(ARRAY) {}
+		JsonValue(std::nullptr_t) noexcept : m_type(null) {}
+
+		JsonValue(const JsonValue& value); // Copy constructor
+		~JsonValue();
 
 		inline JsonType type() const { return m_type; }
 
@@ -90,8 +96,6 @@ namespace Json {
 		JsonValue& operator=(const JsonValue& value);
 		JsonValue& operator=(std::nullptr_t);
 
-		friend KeyValueResult parseNextJsonValue(const std::string& json, const std::size_t& from = 0);
-		friend KeyValueResult parseNextJsonArrayValue(const std::string& jsonArray, const std::size_t& from = 0);
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
 	};
 
