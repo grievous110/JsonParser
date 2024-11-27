@@ -459,9 +459,10 @@ std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 		case BOOL: os << value.b_value; break;
 		case INTEGER: os << value.i_value; break;
 		case DOUBLE: os << value.d_value; break;
-		case STRING: os << '"' << *value.s_value << '"'; break;
+		case STRING: os << JSONSTRING_DELIMITER << *value.s_value << JSONSTRING_DELIMITER; break;
 		case OBJECT: os << serializeObject(*value.o_value); break;
 		case ARRAY:	os << serializeArray(*value.a_value); break;
+		case null: os << JSON_NULL_LITERAL; break;
 		default: break;
 	}
 	return os;
