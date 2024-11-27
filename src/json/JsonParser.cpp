@@ -32,6 +32,47 @@ struct ValueMetaInfo {
 	JsonType type;
 };
 
+string parseEscapedString(const std::string& input) {
+    stringstream result;
+    size_t i = 0;
+    while (i < input.length()) {
+        if (input[i] == '\\') {
+            // Check the escape sequence
+            if (i + 1 < input.length()) {
+                switch (input[i + 1]) {
+                    case '\"': result << '\"'; break;
+                    case '\\': result << '\\'; break;
+                    case '/':  result << '/'; break;
+                    case 'b':  result << '\b'; break;
+                    case 'f':  result << '\f'; break;
+                    case 'n':  result << '\n'; break;
+                    case 'r':  result << '\r'; break;
+                    case 't':  result << '\t'; break;
+                    case 'u': {  // Unicode escape
+                        if (i + 5 < input.length()) {
+                            // Convert the next 4 characters from hex to char
+                            string hex = input.substr(i + 2, 4);
+                            char16_t unicodeChar = stoi(hex, nullptr, 16);
+                            result << static_cast<char>(unicodeChar); // Assuming ASCII or extendable char set
+                            i += 4;  // Skip the next 4 characters (the unicode sequence)
+                        } else {
+                            throw JsonMalformedException("Invalid unicode escape sequenc in json stringe");
+                        }
+                        break;
+                    }
+                    default:
+                        throw JsonMalformedException("Invalid escape sequence in json string");
+                }
+                i++;  // Skip the escape character
+            }
+        } else {
+            result << input[i];
+        }
+        i++;
+    }
+    return result.str();
+}
+
 size_t findNextNonWSCharacter(const string& string, const size_t& off = 0) {
 	for (size_t i = off; i < string.length(); i++) {
 		if (!isspace(string[i])) {
@@ -83,8 +124,11 @@ size_t findEndIndexFor(const std::string& json, const JsonType& type, const size
         }
     } else if (type == JsonType::STRING) {
         for (size_t i = valueStart + 1; i < json.length(); i++) {
-            if (json[i] == JSONSTRING_DELIMITER) {
-                return i;
+			if (json[i] == JSONSTRING_DELIMITER) {
+				// If its not an escaped quote set it as delimiter
+				if (json[i - 1] != '\\') {
+					return i;
+            	}
             }
         }
     }
@@ -429,7 +473,7 @@ JsonValue Json::deserialize(const string& json) {
 		case BOOL: return JsonValue(valueString == JSON_BOOLTRUE_LITERAL);
 		case INTEGER: return JsonValue(stoi(valueString));
 		case DOUBLE: return JsonValue(stod(valueString));
-		case STRING: return JsonValue(valueString);
+		case STRING: return JsonValue(parseEscapedString(valueString));
 		case OBJECT: return JsonValue(deserializeObject(valueString));
 		case ARRAY: return JsonValue(deserializeArray(valueString));
 		default: return JsonValue(nullptr);
