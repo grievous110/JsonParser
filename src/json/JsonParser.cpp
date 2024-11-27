@@ -221,9 +221,16 @@ ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
 	size_t beginValue = findNextNonWSCharacter(json, from);
 	JsonType type = determineJsonType(json, beginValue);
 	size_t endValue = findEndIndexFor(json, type, beginValue);
-	if (beginValue == string::npos || endValue == string::npos) {
+
+	if (beginValue == string::npos || endValue == string::npos)
 		throw JsonMalformedException("Error finding json value constraints");
+
+	if (type == JsonType::STRING) {
+		// Cut off enclosing quotes
+		beginValue++;
+		endValue--;
 	}
+
 	return { beginValue , endValue, type };
 }
 
@@ -452,7 +459,7 @@ std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 		case BOOL: os << value.b_value; break;
 		case INTEGER: os << value.i_value; break;
 		case DOUBLE: os << value.d_value; break;
-		case STRING: os << value.s_value; break;
+		case STRING: os << '"' << *value.s_value << '"'; break;
 		case OBJECT: os << serializeObject(*value.o_value); break;
 		case ARRAY:	os << serializeArray(*value.a_value); break;
 		default: break;
