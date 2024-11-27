@@ -219,11 +219,14 @@ KeyMetaInfo findNextKey(const string& json, const size_t& from = 0) {
 
 ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
 	size_t beginValue = findNextNonWSCharacter(json, from);
-	JsonType type = determineJsonType(json, beginValue);
-	size_t endValue = findEndIndexFor(json, type, beginValue);
+	if (beginValue == string::npos)
+		throw JsonMalformedException("Error finding json value start");
 
-	if (beginValue == string::npos || endValue == string::npos)
-		throw JsonMalformedException("Error finding json value constraints");
+	JsonType type = determineJsonType(json, beginValue);
+	
+	size_t endValue = findEndIndexFor(json, type, beginValue);
+	if (endValue == string::npos)
+		throw JsonMalformedException("Error finding json value end constraint for " + jsonTypeToString(type));
 
 	if (type == JsonType::STRING) {
 		// Cut off enclosing quotes
