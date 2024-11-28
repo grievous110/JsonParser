@@ -17,7 +17,7 @@ using namespace Json;
 #define JSONARRAY_ENDDELIMITER ']'
 
 struct ObjectElementResult {
-	const JsonEntry entry;
+	const JsonObjectEntry entry;
 	const size_t nextSeparatorPos;
 };
 
@@ -302,7 +302,7 @@ string serializeObject(const JsonObject& object) {
 	stringstream stream;
 	stream << JSONOBJECT_STARTDELIMITER;
 	size_t counter = 0;
-	for (const JsonEntry& entry : object) {
+	for (const JsonObjectEntry& entry : object) {
 		counter++;
 		stream << JSONSTRING_DELIMITER << escapeString(entry.first) << JSONSTRING_DELIMITER << JSONKEYVALUE_SEPERATOR << entry.second;
 		if (counter < object.size()) {
@@ -379,8 +379,35 @@ JsonValue::~JsonValue() {
 	}
 }
 
-bool JsonValue::toBool() const {
-	if (m_type != JsonType::Bool)
+JsonValue JsonValue::getValue(const std::string& key) const {
+    if (m_type != JsonType::Object)
+        throw JsonTypeException("Accessing key in non-object type");
+
+    auto it = o_value->find(key);
+    if (it == o_value->end())
+        throw std::out_of_range("Key not found in JsonObject");
+
+    return it->second;
+}
+
+JsonValue JsonValue::getValue(const size_t& index) const {
+    if (m_type != JsonType::Array)
+        throw JsonTypeException("Accessing index in non-array type");
+    if (index >= a_value->size())
+        throw std::out_of_range("Index out of bounds");
+
+    return (*a_value)[index];
+}
+
+bool Json::JsonValue::isEmpty() const {
+    if (m_type == JsonType::Object) return o_value->empty();
+	if (m_type == JsonType::Array) return a_value->empty();
+	throw JsonTypeException("Cannot check emptiness for non-object/array types");
+}
+
+bool JsonValue::toBool() const
+{
+    if (m_type != JsonType::Bool)
 		throw JsonTypeException("JsonValue was casted to BOOL but the underlying type was " + jsonTypeToString(m_type));
 	return b_value;
 }

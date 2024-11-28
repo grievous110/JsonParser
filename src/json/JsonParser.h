@@ -19,8 +19,8 @@ namespace Json {
 
 	class JsonValue;
 	using JsonObject = std::map<std::string, JsonValue>;
+	using JsonObjectEntry = std::pair<std::string, JsonValue>;
 	using JsonArray = std::vector<JsonValue>;
-	using JsonEntry = std::pair<std::string, JsonValue>;
 
 	enum class JsonType {
 		Bool,
@@ -57,6 +57,9 @@ namespace Json {
 
 		JsonValue(const JsonValue& value); // Copy constructor
 		~JsonValue();
+		
+		JsonValue getValue(const std::string& key) const;
+		JsonValue getValue(const size_t& index) const;
 
 		inline JsonType type() const { return m_type; }
 
@@ -67,6 +70,7 @@ namespace Json {
         inline bool isObject() const { return m_type == JsonType::Object; }
         inline bool isArray() const { return m_type == JsonType::Array; }
         inline bool isNull() const { return m_type == JsonType::Null; }
+		bool isEmpty() const;
 
 		// Converter methods might throw JsonTypeException when casting to the wrong type
 		bool toBool() const;
