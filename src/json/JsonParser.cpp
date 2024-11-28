@@ -415,8 +415,24 @@ JsonArray JsonValue::toArray() const {
 	return *a_value;
 }
 
-bool Json::JsonValue::operator==(const JsonValue &other) {
-    return false;
+bool JsonValue::operator==(const JsonValue& other) const {
+    if (m_type != other.m_type)
+        return false;
+
+    switch (m_type) {
+        case JsonType::Bool: return b_value == other.b_value;
+        case JsonType::Integer: return i_value == other.i_value;
+        case JsonType::Double: return d_value == other.d_value;
+        case JsonType::String: return *s_value == *other.s_value;
+        case JsonType::Object: return *o_value == *other.o_value;
+        case JsonType::Array: return *a_value == *other.a_value;
+        case JsonType::Null: return true;
+        default: return false;
+    }
+}
+
+bool JsonValue::operator!=(const JsonValue &other) const {
+    return !(*this == other);
 }
 
 JsonValue& JsonValue::operator=(const bool& value) {

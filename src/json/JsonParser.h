@@ -76,6 +76,9 @@ namespace Json {
 		JsonObject toObject() const;
 		JsonArray toArray() const;
 
+		bool operator==(const JsonValue& other) const;
+		bool operator!=(const JsonValue& other) const;
+
 		JsonValue& operator=(const bool& value);
 		JsonValue& operator=(const int& value);
 		JsonValue& operator=(const double& value);
