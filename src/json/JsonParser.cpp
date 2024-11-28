@@ -53,20 +53,8 @@ string parseEscapedString(const std::string& input) {
                     case 'n':  result << '\n'; break;
                     case 'r':  result << '\r'; break;
                     case 't':  result << '\t'; break;
-                    case 'u': {  // Unicode escape
-                        if (i + 5 < input.length()) {
-                            // Convert the next 4 characters from hex to char
-                            string hex = input.substr(i + 2, 4);
-                            char16_t unicodeChar = stoi(hex, nullptr, 16);
-                            result << static_cast<char>(unicodeChar); // Assuming ASCII or extendable char set
-                            i += 4;  // Skip the next 4 characters (the unicode sequence)
-                        } else {
-                            throw JsonMalformedException("Invalid unicode escape sequenc in json stringe");
-                        }
-                        break;
-                    }
                     default:
-                        throw JsonMalformedException("Invalid escape sequence in json string");
+                        throw JsonMalformedException("Unsupported or invalid escape sequence in json string");
                 }
                 i++;  // Skip the escape character
             }
@@ -74,6 +62,24 @@ string parseEscapedString(const std::string& input) {
             result << input[i];
         }
         i++;
+    }
+    return result.str();
+}
+
+std::string escapeString(const std::string& input) {
+    std::ostringstream result;
+    for (char c : input) {
+        switch (c) {
+            case '\"': result << "\\\""; break;
+            case '\\': result << "\\\\"; break;
+            case '/':  result << "\\/"; break;
+            case '\b': result << "\\b"; break;
+            case '\f': result << "\\f"; break;
+            case '\n': result << "\\n"; break;
+            case '\r': result << "\\r"; break;
+            case '\t': result << "\\t"; break;
+            default: result << c;
+        }
     }
     return result.str();
 }
@@ -215,7 +221,11 @@ JsonType determineJsonType(const string& json, const size_t& valueStart = 0) {
 
 KeyMetaInfo findNextKey(const string& json, const size_t& from = 0) {
 	size_t beginKey = json.find(JSONSTRING_DELIMITER, from);
-	size_t endKey = json.find(JSONSTRING_DELIMITER, beginKey + 1);
+	if (beginKey == string::npos)
+		throw JsonMalformedException("Error finding json key start");
+	
+	// Handle as json string
+	size_t endKey = findEndIndexFor(json, JsonType::STRING, beginKey);
 	if (beginKey == string::npos || endKey == string::npos) {
 		throw JsonMalformedException("Error finding json key constraints");
 	}
@@ -252,9 +262,9 @@ ArrayElementResult parseNextJsonArrayValue(const string& jsonArray, const size_t
 ObjectElementResult parseNextJsonKeyValuePair(const string& json, const size_t& from) {
 	KeyMetaInfo keyInfo = findNextKey(json, from);
 	size_t colonPos = json.find(JSONKEYVALUE_SEPERATOR, keyInfo.endIndex + 1);
-	if (colonPos == string::npos) {
+	if (colonPos == string::npos)
 		throw JsonMalformedException("Error finding json constraints");
-	}
+
 	ValueMetaInfo valueInfo = findNextValue(json, colonPos + 1);
 
 	size_t commaPos = json.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
@@ -264,7 +274,7 @@ ObjectElementResult parseNextJsonKeyValuePair(const string& json, const size_t& 
 	string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
 	JsonValue value = deserialize(valueString);
 
-	return { { keyString, value }, commaPos };
+	return { { parseEscapedString(keyString), value }, commaPos };
 }
 
 string serializeArray(const JsonArray& array) {
@@ -294,7 +304,7 @@ string serializeObject(const JsonObject& object) {
 	size_t counter = 0;
 	for (const JsonEntry& entry : object) {
 		counter++;
-		stream << JSONSTRING_DELIMITER << entry.first << JSONSTRING_DELIMITER << JSONKEYVALUE_SEPERATOR << entry.second;
+		stream << JSONSTRING_DELIMITER << escapeString(entry.first) << JSONSTRING_DELIMITER << JSONKEYVALUE_SEPERATOR << entry.second;
 		if (counter < object.size()) {
 			stream << JSONVALUE_DELIMITER;
 		}
@@ -473,7 +483,7 @@ std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 		case BOOL: os << value.b_value; break;
 		case INTEGER: os << value.i_value; break;
 		case DOUBLE: os << value.d_value; break;
-		case STRING: os << JSONSTRING_DELIMITER << *value.s_value << JSONSTRING_DELIMITER; break;
+		case STRING: os << JSONSTRING_DELIMITER << escapeString(*value.s_value) << JSONSTRING_DELIMITER; break;
 		case OBJECT: os << serializeObject(*value.o_value); break;
 		case ARRAY:	os << serializeArray(*value.a_value); break;
 		case null: os << JSON_NULL_LITERAL; break;
