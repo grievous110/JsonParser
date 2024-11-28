@@ -22,14 +22,14 @@ namespace Json {
 	using JsonArray = std::vector<JsonValue>;
 	using JsonEntry = std::pair<std::string, JsonValue>;
 
-	enum JsonType {
-		BOOL,
-		INTEGER,
-		DOUBLE,
-		STRING,
-		OBJECT,
-		ARRAY,
-		null
+	enum class JsonType {
+		Bool,
+		Integer,
+		Double,
+		String,
+		Object,
+		Array,
+		Null
 	};
 
 	class JsonValue {
@@ -46,19 +46,27 @@ namespace Json {
 		JsonType m_type;
 
 	public:
-		JsonValue() noexcept : m_type(null) {}
-		JsonValue(bool value) : b_value(value), m_type(BOOL) {}
-		JsonValue(int value) : i_value(value), m_type(INTEGER) {}
-		JsonValue(double value) : d_value(value), m_type(DOUBLE) {}
-		JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(STRING) {}
-		JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(OBJECT) {}
-		JsonValue(const JsonArray& value) : a_value(new JsonArray(value)), m_type(ARRAY) {}
-		JsonValue(std::nullptr_t) noexcept : m_type(null) {}
+		JsonValue() noexcept : m_type(JsonType::Null) {}
+		JsonValue(bool value) : b_value(value), m_type(JsonType::Bool) {}
+		JsonValue(int value) : i_value(value), m_type(JsonType::Integer) {}
+		JsonValue(double value) : d_value(value), m_type(JsonType::Double) {}
+		JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(JsonType::String) {}
+		JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(JsonType::Object) {}
+		JsonValue(const JsonArray& value) : a_value(new JsonArray(value)), m_type(JsonType::Array) {}
+		JsonValue(std::nullptr_t) noexcept : m_type(JsonType::Null) {}
 
 		JsonValue(const JsonValue& value); // Copy constructor
 		~JsonValue();
 
 		inline JsonType type() const { return m_type; }
+
+		inline bool isBool() const { return m_type == JsonType::Bool; }
+        inline bool isInt() const { return m_type == JsonType::Integer; }
+        inline bool isDouble() const { return m_type == JsonType::Double; }
+        inline bool isString() const { return m_type == JsonType::String; }
+        inline bool isObject() const { return m_type == JsonType::Object; }
+        inline bool isArray() const { return m_type == JsonType::Array; }
+        inline bool isNull() const { return m_type == JsonType::Null; }
 
 		// Converter methods might throw JsonTypeException when casting to the wrong type
 		bool toBool() const;
@@ -86,14 +94,14 @@ namespace Json {
 
 	inline std::string jsonTypeToString(const JsonType& type) {
         switch (type) {
-            case BOOL:   	return "BOOL";
-            case INTEGER: 	return "INTEGER";
-			case DOUBLE: 	return "DOUBLE";
-            case STRING: 	return "STRING";
-            case OBJECT: 	return "OBJECT";
-            case ARRAY:  	return "ARRAY";
-            case null:   	return "NULL";
-            default:     	return "UNKNOWN";
+            case JsonType::Bool: return "Bool";
+            case JsonType::Integer: return "Integer";
+            case JsonType::Double: return "Double";
+            case JsonType::String: return "String";
+            case JsonType::Object: return "Object";
+            case JsonType::Array: return "Array";
+            case JsonType::Null: return "Null";
+            default: return "Unknown";
         }
     }
 }
