@@ -47,9 +47,10 @@ namespace Json {
 
 	public:
 		JsonValue() noexcept : m_type(JsonType::Null) {}
-		JsonValue(bool value) : b_value(value), m_type(JsonType::Bool) {}
-		JsonValue(int value) : i_value(value), m_type(JsonType::Integer) {}
-		JsonValue(double value) : d_value(value), m_type(JsonType::Double) {}
+		JsonValue(const bool& value) : b_value(value), m_type(JsonType::Bool) {}
+		JsonValue(const int& value) : i_value(value), m_type(JsonType::Integer) {}
+		JsonValue(const double& value) : d_value(value), m_type(JsonType::Double) {}
+		JsonValue(const char* value) : s_value(new std::string(value)), m_type(JsonType::String) {}
 		JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(JsonType::String) {}
 		JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(JsonType::Object) {}
 		JsonValue(const JsonArray& value) : a_value(new JsonArray(value)), m_type(JsonType::Array) {}
@@ -96,8 +97,8 @@ namespace Json {
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
 	};
 
-	std::string serialize(const JsonValue& object);
-	JsonValue deserialize(const std::string& json);
+	std::string toJsonString(const JsonValue& object);
+	JsonValue parseJson(const std::string& json);
 
 	inline std::string jsonTypeToString(const JsonType& type) {
         switch (type) {

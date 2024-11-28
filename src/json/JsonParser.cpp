@@ -255,7 +255,7 @@ ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
 ArrayElementResult parseNextJsonArrayValue(const string& jsonArray, const size_t& from) {
 	ValueMetaInfo valueInfo = findNextValue(jsonArray, from);
 	size_t commaPos = jsonArray.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
-	JsonValue value = deserialize(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
+	JsonValue value = parseJson(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
 	return { { value } , commaPos };
 }
 
@@ -272,7 +272,7 @@ ObjectElementResult parseNextJsonKeyValuePair(const string& json, const size_t& 
 	// Deserialize child value
 	string keyString = json.substr(keyInfo.startIndex + 1, keyInfo.endIndex - keyInfo.startIndex - 1);
 	string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
-	JsonValue value = deserialize(valueString);
+	JsonValue value = parseJson(valueString);
 
 	return { { parseEscapedString(keyString), value }, commaPos };
 }
@@ -527,7 +527,7 @@ JsonValue& JsonValue::operator=(nullptr_t) {
 
 std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 	switch (value.m_type) {
-		case JsonType::Bool: os << value.b_value; break;
+		case JsonType::Bool: os << (value.b_value ? JSON_BOOLTRUE_LITERAL : JSON_BOOLFALSE_LITERAL); break;
 		case JsonType::Integer: os << value.i_value; break;
 		case JsonType::Double: os << value.d_value; break;
 		case JsonType::String: os << JSONSTRING_DELIMITER << escapeString(*value.s_value) << JSONSTRING_DELIMITER; break;
@@ -539,13 +539,13 @@ std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 	return os;
 }
 
-string Json::serialize(const JsonValue& value) {
+string Json::toJsonString(const JsonValue& value) {
 	stringstream stream;
 	stream << value;
 	return stream.str();
 }
 
-JsonValue Json::deserialize(const string& json) {
+JsonValue Json::parseJson(const string& json) {
 	ValueMetaInfo valueInfo = findNextValue(json);
 	string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
 	switch (valueInfo.type) {
