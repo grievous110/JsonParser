@@ -8,13 +8,23 @@
 
 namespace Json {
 	class JsonMalformedException : public std::exception {
+	private:
+    	const std::string m_message;
+
 	public:
-		JsonMalformedException(const std::string& message = "") : std::exception(message.c_str()) {}
+		explicit JsonMalformedException(const std::string& message = "") : m_message(message) {}
+
+		const char* what() const noexcept override { return m_message.c_str(); }
 	};
 
 	class JsonTypeException : public std::exception {
+	private:
+    	const std::string m_message;
+
 	public:
-		JsonTypeException(const std::string& message = "") : std::exception(message.c_str()) {}
+		explicit JsonTypeException(const std::string& message = "") : m_message(message) {}
+
+		const char* what() const noexcept override { return m_message.c_str(); }
 	};
 
 	class JsonValue;
