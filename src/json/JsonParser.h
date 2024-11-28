@@ -9,12 +9,12 @@
 namespace Json {
 	class JsonMalformedException : public std::exception {
 	public:
-		JsonMalformedException(const std::string message = "") : std::exception(message.c_str()) {}
+		JsonMalformedException(const std::string& message = "") : std::exception(message.c_str()) {}
 	};
 
 	class JsonTypeException : public std::exception {
 	public:
-		JsonTypeException(const std::string message = "") : std::exception(message.c_str()) {}
+		JsonTypeException(const std::string& message = "") : std::exception(message.c_str()) {}
 	};
 
 	class JsonValue;
@@ -31,24 +31,6 @@ namespace Json {
 		ARRAY,
 		null
 	};
-
-	std::ostream& operator<<(std::ostream& os, const JsonValue& value);
-
-	std::string serialize(const JsonValue& object);
-	JsonValue deserialize(const std::string& json);
-
-	inline std::string jsonTypeToString(const JsonType& type) {
-        switch (type) {
-            case BOOL:   	return "BOOL";
-            case INTEGER: 	return "INTEGER";
-			case DOUBLE: 	return "DOUBLE";
-            case STRING: 	return "STRING";
-            case OBJECT: 	return "OBJECT";
-            case ARRAY:  	return "ARRAY";
-            case null:   	return "NULL";
-            default:     	return "UNKNOWN";
-        }
-    }
 
 	class JsonValue {
 	private:
@@ -99,6 +81,21 @@ namespace Json {
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
 	};
 
+	std::string serialize(const JsonValue& object);
+	JsonValue deserialize(const std::string& json);
+
+	inline std::string jsonTypeToString(const JsonType& type) {
+        switch (type) {
+            case BOOL:   	return "BOOL";
+            case INTEGER: 	return "INTEGER";
+			case DOUBLE: 	return "DOUBLE";
+            case STRING: 	return "STRING";
+            case OBJECT: 	return "OBJECT";
+            case ARRAY:  	return "ARRAY";
+            case null:   	return "NULL";
+            default:     	return "UNKNOWN";
+        }
+    }
 }
 
 #endif
