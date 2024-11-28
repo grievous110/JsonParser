@@ -1,5 +1,5 @@
 # Minimum required version of CMake
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.11)
 
 # Set the project name and specify C++ standard
 project(JsonParser VERSION 1.0 LANGUAGES CXX)
