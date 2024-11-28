@@ -1,4 +1,7 @@
-#include "JsonParser.h"
+
+// A small demo .cpp wich illustrates how to use the values
+
+#include "json/JsonParser.h"
 #include <iostream>
 
 using namespace std;
