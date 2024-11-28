@@ -16,20 +16,25 @@ using namespace Json;
 #define JSONARRAY_STARTDELIMITER '['
 #define JSONARRAY_ENDDELIMITER ']'
 
-struct KeyValueResult {
-	JsonEntry entry;
-	size_t commaPos;
+struct ObjectElementResult {
+	const JsonEntry entry;
+	const size_t nextSeparatorPos;
+};
+
+struct ArrayElementResult {
+	const JsonValue value;
+	const size_t nextSeparatorPos;
 };
 
 struct KeyMetaInfo {
-	size_t startIndex;
-	size_t endIndex;
+	const size_t startIndex;
+	const size_t endIndex;
 };
 
 struct ValueMetaInfo {
-	size_t startIndex;
-	size_t endIndex;
-	JsonType type;
+	const size_t startIndex;
+	const size_t endIndex;
+	const JsonType type;
 };
 
 string parseEscapedString(const std::string& input) {
@@ -237,14 +242,14 @@ ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
 	return { beginValue , endValue, type };
 }
 
-KeyValueResult parseNextJsonArrayValue(const string& jsonArray, const size_t& from) {
+ArrayElementResult parseNextJsonArrayValue(const string& jsonArray, const size_t& from) {
 	ValueMetaInfo valueInfo = findNextValue(jsonArray, from);
 	size_t commaPos = jsonArray.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
 	JsonValue value = deserialize(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
-	return { { "value", value } , commaPos };
+	return { { value } , commaPos };
 }
 
-KeyValueResult parseNextJsonValue(const string& json, const size_t& from) {
+ObjectElementResult parseNextJsonKeyValuePair(const string& json, const size_t& from) {
 	KeyMetaInfo keyInfo = findNextKey(json, from);
 	size_t colonPos = json.find(JSONKEYVALUE_SEPERATOR, keyInfo.endIndex + 1);
 	if (colonPos == string::npos) {
@@ -299,39 +304,45 @@ string serializeObject(const JsonObject& object) {
 }
 
 JsonArray deserializeArray(const string& jsonArray) {
+	// This method assumes the input is already cropped and guranteed to be a json array!
 	JsonArray array;
-	size_t begin = jsonArray.find(JSONARRAY_STARTDELIMITER);
-	size_t end = findEndIndexFor(jsonArray, JsonType::ARRAY, begin);
-	if (jsonArray.empty() || begin == string::npos || end == string::npos || end <= begin + 1) {
-		return array;
-	}
-	size_t index = begin + 1;
+	size_t index = findNextNonWSCharacter(jsonArray, 1);
+	size_t end = jsonArray.length() - 1;
+
+	if (index == end) {
+		// If next non whitespace character is the end of the array -> empty array
+        return array;
+    }
+
 	while (index < end) {
-		KeyValueResult result = parseNextJsonArrayValue(jsonArray, index);
-		array.push_back(result.entry.second);
-		if (result.commaPos == string::npos) {
+		ArrayElementResult result = parseNextJsonArrayValue(jsonArray, index);
+		array.push_back(result.value);
+		if (result.nextSeparatorPos == string::npos) {
 			break;
 		}
-		index = result.commaPos + 1;
+		index = result.nextSeparatorPos + 1;
 	}
 	return array;
 }
 
-JsonObject deserializeObject(const string& json) {
+JsonObject deserializeObject(const string& jsonObj) {
+	// This method assumes the input is already cropped and guranteed to be a json object!
 	JsonObject obj;
-	size_t begin = json.find(JSONOBJECT_STARTDELIMITER);
-	size_t end = findEndIndexFor(json, JsonType::OBJECT, begin);
-	if (json.empty() || begin == string::npos || end == string::npos || end <= begin+1) {
-		return obj;
-	}
-	size_t index = begin + 1;
+	size_t index = findNextNonWSCharacter(jsonObj, 1);
+	size_t end = jsonObj.length() - 1;
+
+	if (index == end) {
+		// If next non whitespace character is the end of the object -> empty object
+        return obj;
+    }
+
 	while (index < end) {
-		KeyValueResult result = parseNextJsonValue(json, index);
+		ObjectElementResult result = parseNextJsonKeyValuePair(jsonObj, index);
 		obj.insert(result.entry);
-		if (result.commaPos == string::npos) {
+		if (result.nextSeparatorPos == string::npos) {
 			break;
 		}
-		index = result.commaPos + 1;
+		index = result.nextSeparatorPos + 1;
 	}
 	return obj;
 }
