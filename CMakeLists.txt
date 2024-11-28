@@ -3,32 +3,34 @@ cmake_minimum_required(VERSION 3.10)
 
 # Set the project name and specify C++ standard
 project(JsonParser VERSION 1.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Gather all .cpp files in the src directory
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+file(GLOB_RECURSE LIB_SOURCES "src/json/*.cpp")
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE src/json)
+enable_testing()
 
-# Set up test json copying
-set(RESOURCE_DIR ${CMAKE_SOURCE_DIR}/testjsons)
-set(DESTINATION_DIR ${CMAKE_BINARY_DIR}/bin/testjsons)
-
-# Set output directories
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_BINARY_DIR}/bin
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/35d0c365609296fa4730d62057c487e3cfa030ff.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-add_custom_command(
-    TARGET ${PROJECT_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${RESOURCE_DIR} ${DESTINATION_DIR}
-    COMMENT "Copying resource files to the build directory"
-)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+
+add_executable(${PROJECT_NAME}_TESTS ${TEST_SOURCES})
+
+target_include_directories(${PROJECT_NAME}_TESTS PRIVATE src)
+
+target_link_libraries(${PROJECT_NAME}_TESTS ${PROJECT_NAME} GTest::gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(${PROJECT_NAME}_TESTS)
