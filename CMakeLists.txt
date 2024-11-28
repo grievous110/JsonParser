@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 
 # Set the project name and specify C++ standard
 project(JsonParser VERSION 1.0 LANGUAGES CXX)
+# C++ 14 only for GoogleTest, JsonParser itself is compatible to earlier versions
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
