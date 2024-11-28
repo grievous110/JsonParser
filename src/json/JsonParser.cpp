@@ -1,9 +1,5 @@
 #include "JsonParser.h"
-#include <cctype>
 #include <sstream>
-
-using namespace std;
-using namespace Json;
 
 #define JSON_NULL_LITERAL "null"
 #define JSON_BOOLTRUE_LITERAL "true"
@@ -17,12 +13,12 @@ using namespace Json;
 #define JSONARRAY_ENDDELIMITER ']'
 
 struct ObjectElementResult {
-	const JsonObjectEntry entry;
+	const Json::JsonObjectEntry entry;
 	const size_t nextSeparatorPos;
 };
 
 struct ArrayElementResult {
-	const JsonValue value;
+	const Json::JsonValue value;
 	const size_t nextSeparatorPos;
 };
 
@@ -34,11 +30,11 @@ struct KeyMetaInfo {
 struct ValueMetaInfo {
 	const size_t startIndex;
 	const size_t endIndex;
-	const JsonType type;
+	const Json::JsonType type;
 };
 
-string parseEscapedString(const std::string& input) {
-    stringstream result;
+std::string parseEscapedString(const std::string& input) {
+    std::stringstream result;
     size_t i = 0;
     while (i < input.length()) {
         if (input[i] == '\\') {
@@ -54,7 +50,7 @@ string parseEscapedString(const std::string& input) {
                     case 'r':  result << '\r'; break;
                     case 't':  result << '\t'; break;
                     default:
-                        throw JsonMalformedException("Unsupported or invalid escape sequence in json string");
+                        throw Json::JsonMalformedException("Unsupported or invalid escape sequence in json string");
                 }
                 i++;  // Skip the escape character
             }
@@ -84,17 +80,17 @@ std::string escapeString(const std::string& input) {
     return result.str();
 }
 
-size_t findNextNonWSCharacter(const string& string, const size_t& off = 0) {
+size_t findNextNonWSCharacter(const std::string& string, const size_t& off = 0) {
 	for (size_t i = off; i < string.length(); i++) {
 		if (!isspace(string[i])) {
 			return i;
 		}
 	}
-	return string::npos;
+	return std::string::npos;
 }
 
-size_t findEndIndexFor(const std::string& json, const JsonType& type, const size_t& valueStart = 0) {
-    if (type == JsonType::Bool || type == JsonType::Integer || type == JsonType::Double || type == JsonType::Null) {
+size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, const size_t& valueStart = 0) {
+    if (type == Json::JsonType::Bool || type == Json::JsonType::Integer || type == Json::JsonType::Double || type == Json::JsonType::Null) {
         for (size_t i = valueStart; i < json.length(); i++) {
             // Check for delimiters, spaces, or end of the number
             if (isspace(json[i]) || json[i] == JSONVALUE_DELIMITER || json[i] == JSONOBJECT_ENDDELIMITER || json[i] == JSONARRAY_ENDDELIMITER) {
@@ -105,7 +101,7 @@ size_t findEndIndexFor(const std::string& json, const JsonType& type, const size
         }
 		// Always return from cause they might be raw unenclosed types
 		return json.length() - 1;
-    } else if (type == JsonType::Object) {
+    } else if (type == Json::JsonType::Object) {
         int count = 0; // Tracks nested objects
         for (size_t i = valueStart; i < json.length(); i++) {
             if (json[i] == JSONOBJECT_STARTDELIMITER) {
@@ -116,10 +112,10 @@ size_t findEndIndexFor(const std::string& json, const JsonType& type, const size
                 }
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the object
-                i = findEndIndexFor(json, JsonType::String, i);
+                i = findEndIndexFor(json, Json::JsonType::String, i);
             }
         }
-    } else if (type == JsonType::Array) {
+    } else if (type == Json::JsonType::Array) {
         int count = 0; // Tracks nested arrays
         for (size_t i = valueStart; i < json.length(); i++) {
             if (json[i] == JSONARRAY_STARTDELIMITER) {
@@ -130,10 +126,10 @@ size_t findEndIndexFor(const std::string& json, const JsonType& type, const size
                 }
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the array
-                i = findEndIndexFor(json, JsonType::String, i);
+                i = findEndIndexFor(json, Json::JsonType::String, i);
             }
         }
-    } else if (type == JsonType::String) {
+    } else if (type == Json::JsonType::String) {
         for (size_t i = valueStart + 1; i < json.length(); i++) {
 			if (json[i] == JSONSTRING_DELIMITER) {
 				// If its not an escaped quote set it as delimiter
@@ -147,7 +143,7 @@ size_t findEndIndexFor(const std::string& json, const JsonType& type, const size
     return std::string::npos;
 }
 
-bool validateIdentifier(const string& json, const string& identifier, const size_t& identifierStart = 0) {
+bool validateIdentifier(const std::string& json, const std::string& identifier, const size_t& identifierStart = 0) {
 	bool mismatch = true; // Check if next chars match with the given identifier
 	for (size_t i = identifierStart; i < json.length(); i++) {
 		if (i - identifierStart > identifier.length()) {
@@ -164,14 +160,14 @@ bool validateIdentifier(const string& json, const string& identifier, const size
 	return !mismatch;
 }
 
-JsonType determineJsonType(const string& json, const size_t& valueStart = 0) {
+Json::JsonType determineJsonType(const std::string& json, const size_t& valueStart = 0) {
 	if (json[valueStart] == JSON_BOOLTRUE_LITERAL[0]) {
 		if (validateIdentifier(json, JSON_BOOLTRUE_LITERAL, valueStart)) {
-			return JsonType::Bool;
+			return Json::JsonType::Bool;
 		}
 	} else if (json[valueStart] == JSON_BOOLFALSE_LITERAL[0]) {
 		if (validateIdentifier(json, JSON_BOOLFALSE_LITERAL, valueStart)) {
-			return JsonType::Bool;
+			return Json::JsonType::Bool;
 		}
 	} else if (isdigit(json[valueStart]) || json[valueStart] == '-') { // Json standard prohibits a leading + for numbers
 		size_t index = valueStart + (json[valueStart] == '-' ? 1 : 0);
@@ -181,11 +177,11 @@ JsonType determineJsonType(const string& json, const size_t& valueStart = 0) {
         while (index < json.size() && (isdigit(json[index]) || json[index] == '.' || json[index] == 'e' || json[index] == 'E')) {
             if (json[index] == '.') {
                 if (hasDot) // A second dot invalidates the number
-					throw JsonMalformedException("Invalid json number format: multiple decimal points");
+					throw Json::JsonMalformedException("Invalid json number format: multiple decimal points");
                 hasDot = true;
             } else if (json[index] == 'e' || json[index] == 'E') {
                 if (hasExponent) // A second exponent marker invalidates the number
-					throw JsonMalformedException("Invalid json number format: multiple exponents");
+					throw Json::JsonMalformedException("Invalid json number format: multiple exponents");
                 hasExponent = true;
 
                 // Expect a number after 'e' or 'E', possibly with a sign
@@ -195,90 +191,90 @@ JsonType determineJsonType(const string& json, const size_t& valueStart = 0) {
 
 				// Ensure there is at least one digit after the exponent
                 if (index + 1 >= json.size() || !isdigit(json[index + 1])) {
-                    throw JsonMalformedException("Invalid json number format: incomplete exponent");
+                    throw Json::JsonMalformedException("Invalid json number format: incomplete exponent");
                 }
             }
         	index++;
         }
 
         if (hasDot || hasExponent) {
-            return JsonType::Double;
+            return Json::JsonType::Double;
         }
-        return JsonType::Integer;
+        return Json::JsonType::Integer;
 	} else if (json[valueStart] == JSONSTRING_DELIMITER) {
-		return JsonType::String;
+		return Json::JsonType::String;
 	} else if (json[valueStart] == JSONOBJECT_STARTDELIMITER) {
-		return JsonType::Object;
+		return Json::JsonType::Object;
 	} else if (json[valueStart] == JSONARRAY_STARTDELIMITER) {
-		return JsonType::Array;
+		return Json::JsonType::Array;
 	} else if (json[valueStart] == JSON_NULL_LITERAL[0]) {
 		if (validateIdentifier(json, JSON_NULL_LITERAL, valueStart)) {
-			return JsonType::Null;
+			return Json::JsonType::Null;
 		}
 	}
-	throw JsonMalformedException("Could not determine json type");
+	throw Json::JsonMalformedException("Could not determine json type");
 }
 
-KeyMetaInfo findNextKey(const string& json, const size_t& from = 0) {
+KeyMetaInfo findNextKey(const std::string& json, const size_t& from = 0) {
 	size_t beginKey = json.find(JSONSTRING_DELIMITER, from);
-	if (beginKey == string::npos)
-		throw JsonMalformedException("Error finding json key start");
+	if (beginKey == std::string::npos)
+		throw Json::JsonMalformedException("Error finding json key start");
 	
 	// Handle as json string
-	size_t endKey = findEndIndexFor(json, JsonType::String, beginKey);
-	if (beginKey == string::npos || endKey == string::npos) {
-		throw JsonMalformedException("Error finding json key constraints");
+	size_t endKey = findEndIndexFor(json, Json::JsonType::String, beginKey);
+	if (beginKey == std::string::npos || endKey == std::string::npos) {
+		throw Json::JsonMalformedException("Error finding json key constraints");
 	}
 	return { beginKey, endKey };
 }
 
-ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
+ValueMetaInfo findNextValue(const std::string& json, const size_t& from = 0) {
 	size_t beginValue = findNextNonWSCharacter(json, from);
-	if (beginValue == string::npos)
-		throw JsonMalformedException("Error finding json value start");
+	if (beginValue == std::string::npos)
+		throw Json::JsonMalformedException("Error finding json value start");
 
-	JsonType type = determineJsonType(json, beginValue);
+	Json::JsonType type = determineJsonType(json, beginValue);
 	
 	size_t endValue = findEndIndexFor(json, type, beginValue);
-	if (endValue == string::npos)
-		throw JsonMalformedException("Error finding json value end constraint for " + jsonTypeToString(type));
+	if (endValue == std::string::npos)
+		throw Json::JsonMalformedException("Error finding json value end constraint for " + jsonTypeToString(type));
 
 	return { beginValue , endValue, type };
 }
 
-ArrayElementResult parseNextJsonArrayValue(const string& jsonArray, const size_t& from) {
+ArrayElementResult parseNextJsonArrayValue(const std::string& jsonArray, const size_t& from) {
 	ValueMetaInfo valueInfo = findNextValue(jsonArray, from);
 	size_t commaPos = jsonArray.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
-	JsonValue value = parseJson(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
+	Json::JsonValue value = Json::parseJson(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
 	return { { value } , commaPos };
 }
 
-ObjectElementResult parseNextJsonKeyValuePair(const string& json, const size_t& from) {
+ObjectElementResult parseNextJsonKeyValuePair(const std::string& json, const size_t& from) {
 	KeyMetaInfo keyInfo = findNextKey(json, from);
 	size_t colonPos = json.find(JSONKEYVALUE_SEPERATOR, keyInfo.endIndex + 1);
-	if (colonPos == string::npos)
-		throw JsonMalformedException("Error finding json constraints");
+	if (colonPos == std::string::npos)
+		throw Json::JsonMalformedException("Error finding json constraints");
 
 	ValueMetaInfo valueInfo = findNextValue(json, colonPos + 1);
 
 	size_t commaPos = json.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
 
 	// Deserialize child value
-	string keyString = json.substr(keyInfo.startIndex + 1, keyInfo.endIndex - keyInfo.startIndex - 1);
-	string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
-	JsonValue value = parseJson(valueString);
+	std::string keyString = json.substr(keyInfo.startIndex + 1, keyInfo.endIndex - keyInfo.startIndex - 1);
+	std::string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
+	Json::JsonValue value = Json::parseJson(valueString);
 
 	return { { parseEscapedString(keyString), value }, commaPos };
 }
 
-string serializeArray(const JsonArray& array) {
+std::string serializeArray(const Json::JsonArray& array) {
 	if (array.empty()) {
 		return { JSONARRAY_STARTDELIMITER, JSONARRAY_ENDDELIMITER };
 	}
-	stringstream stream;
+	std::stringstream stream;
 	stream << JSONARRAY_STARTDELIMITER;
 	size_t counter = 0;
-	for (const JsonValue& entry : array) {
+	for (const Json::JsonValue& entry : array) {
 		counter++;
 		stream << entry;
 		if (counter < array.size()) {
@@ -289,14 +285,14 @@ string serializeArray(const JsonArray& array) {
 	return stream.str();
 }
 
-string serializeObject(const JsonObject& object) {
+std::string serializeObject(const Json::JsonObject& object) {
 	if (object.empty()) {
 		return { JSONOBJECT_STARTDELIMITER, JSONOBJECT_ENDDELIMITER };
 	}
-	stringstream stream;
+	std::stringstream stream;
 	stream << JSONOBJECT_STARTDELIMITER;
 	size_t counter = 0;
-	for (const JsonObjectEntry& entry : object) {
+	for (const Json::JsonObjectEntry& entry : object) {
 		counter++;
 		stream << JSONSTRING_DELIMITER << escapeString(entry.first) << JSONSTRING_DELIMITER << JSONKEYVALUE_SEPERATOR << entry.second;
 		if (counter < object.size()) {
@@ -307,9 +303,9 @@ string serializeObject(const JsonObject& object) {
 	return stream.str();
 }
 
-JsonArray deserializeArray(const string& jsonArray) {
+Json::JsonArray deserializeArray(const std::string& jsonArray) {
 	// This method assumes the input is already cropped and guranteed to be a json array!
-	JsonArray array;
+	Json::JsonArray array;
 	size_t index = findNextNonWSCharacter(jsonArray, 1);
 	size_t end = jsonArray.length() - 1;
 
@@ -321,7 +317,7 @@ JsonArray deserializeArray(const string& jsonArray) {
 	while (index < end) {
 		ArrayElementResult result = parseNextJsonArrayValue(jsonArray, index);
 		array.push_back(result.value);
-		if (result.nextSeparatorPos == string::npos) {
+		if (result.nextSeparatorPos == std::string::npos) {
 			break;
 		}
 		index = result.nextSeparatorPos + 1;
@@ -329,9 +325,9 @@ JsonArray deserializeArray(const string& jsonArray) {
 	return array;
 }
 
-JsonObject deserializeObject(const string& jsonObj) {
+Json::JsonObject deserializeObject(const std::string& jsonObj) {
 	// This method assumes the input is already cropped and guranteed to be a json object!
-	JsonObject obj;
+	Json::JsonObject obj;
 	size_t index = findNextNonWSCharacter(jsonObj, 1);
 	size_t end = jsonObj.length() - 1;
 
@@ -343,7 +339,7 @@ JsonObject deserializeObject(const string& jsonObj) {
 	while (index < end) {
 		ObjectElementResult result = parseNextJsonKeyValuePair(jsonObj, index);
 		obj.insert(result.entry);
-		if (result.nextSeparatorPos == string::npos) {
+		if (result.nextSeparatorPos == std::string::npos) {
 			break;
 		}
 		index = result.nextSeparatorPos + 1;
@@ -351,31 +347,31 @@ JsonObject deserializeObject(const string& jsonObj) {
 	return obj;
 }
 
-JsonValue::JsonValue(const JsonValue& other) {
+Json::JsonValue::JsonValue(const Json::JsonValue& other) {
 	m_type = other.m_type;
 	switch (m_type) {
-		case JsonType::Bool: 	b_value = other.b_value; break;
-		case JsonType::Integer: i_value = other.i_value; break;
-		case JsonType::Double: 	d_value = other.d_value; break;
-		case JsonType::String: 	s_value = new string(*other.s_value); break;
-		case JsonType::Object: 	o_value = new JsonObject(*other.o_value); break;
-		case JsonType::Array: 	a_value = new JsonArray(*other.a_value); break;
+		case Json::JsonType::Bool: b_value = other.b_value; break;
+		case Json::JsonType::Integer: i_value = other.i_value; break;
+		case Json::JsonType::Double: d_value = other.d_value; break;
+		case Json::JsonType::String: s_value = new std::string(*other.s_value); break;
+		case Json::JsonType::Object: o_value = new Json::JsonObject(*other.o_value); break;
+		case Json::JsonType::Array: a_value = new Json::JsonArray(*other.a_value); break;
 		default: break;
 	}
 }
 
-JsonValue::~JsonValue() {
+Json::JsonValue::~JsonValue() {
 	switch (m_type) { // Manual memory management for special cases
-		case JsonType::String: delete s_value; break;
-		case JsonType::Object: delete o_value; break;
-		case JsonType::Array: delete a_value; break;
+		case Json::JsonType::String: delete s_value; break;
+		case Json::JsonType::Object: delete o_value; break;
+		case Json::JsonType::Array: delete a_value; break;
 		default: break;
 	}
 }
 
-JsonValue JsonValue::getValue(const std::string& key) const {
-    if (m_type != JsonType::Object)
-        throw JsonTypeException("Accessing key in non-object type");
+Json::JsonValue Json::JsonValue::getValue(const std::string& key) const {
+    if (m_type != Json::JsonType::Object)
+        throw Json::JsonTypeException("Accessing key in non-object type");
 
     auto it = o_value->find(key);
     if (it == o_value->end())
@@ -384,9 +380,9 @@ JsonValue JsonValue::getValue(const std::string& key) const {
     return it->second;
 }
 
-JsonValue JsonValue::getValue(const size_t& index) const {
-    if (m_type != JsonType::Array)
-        throw JsonTypeException("Accessing index in non-array type");
+Json::JsonValue Json::JsonValue::getValue(const size_t& index) const {
+    if (m_type != Json::JsonType::Array)
+        throw Json::JsonTypeException("Accessing index in non-array type");
     if (index >= a_value->size())
         throw std::out_of_range("Index out of bounds");
 
@@ -394,164 +390,163 @@ JsonValue JsonValue::getValue(const size_t& index) const {
 }
 
 bool Json::JsonValue::isEmpty() const {
-    if (m_type == JsonType::Object) return o_value->empty();
-	if (m_type == JsonType::Array) return a_value->empty();
-	throw JsonTypeException("Cannot check emptiness for non-object/array types");
+    if (m_type == Json::JsonType::Object) return o_value->empty();
+	if (m_type == Json::JsonType::Array) return a_value->empty();
+	throw Json::JsonTypeException("Cannot check emptiness for non-object/array types");
 }
 
-bool JsonValue::toBool() const
-{
-    if (m_type != JsonType::Bool)
-		throw JsonTypeException("JsonValue was casted to BOOL but the underlying type was " + jsonTypeToString(m_type));
+bool Json::JsonValue::toBool() const {
+    if (m_type != Json::JsonType::Bool)
+		throw Json::JsonTypeException("JsonValue was casted to BOOL but the underlying type was " + jsonTypeToString(m_type));
 	return b_value;
 }
 
-int JsonValue::toInt() const {
-	if (m_type != JsonType::Integer)
-		throw JsonTypeException("JsonValue was casted to INTEGER but the underlying type was " + jsonTypeToString(m_type));
+int Json::JsonValue::toInt() const {
+	if (m_type != Json::JsonType::Integer)
+		throw Json::JsonTypeException("JsonValue was casted to INTEGER but the underlying type was " + jsonTypeToString(m_type));
 	return i_value;
 }
 
-double JsonValue::toDouble() const {
-	if (m_type != JsonType::Double)
-		throw JsonTypeException("JsonValue was casted to DOUBLE but the underlying type was " + jsonTypeToString(m_type));
+double Json::JsonValue::toDouble() const {
+	if (m_type != Json::JsonType::Double)
+		throw Json::JsonTypeException("JsonValue was casted to DOUBLE but the underlying type was " + jsonTypeToString(m_type));
 	return d_value;
 }
 
-string JsonValue::toString() const {
-	if (m_type != JsonType::String)
-		throw JsonTypeException("JsonValue was casted to STRING but the underlying type was " + jsonTypeToString(m_type));
+std::string Json::JsonValue::toString() const {
+	if (m_type != Json::JsonType::String)
+		throw Json::JsonTypeException("JsonValue was casted to STRING but the underlying type was " + jsonTypeToString(m_type));
 	return *s_value;
 }
 
-JsonObject JsonValue::toObject() const {
-	if (m_type != JsonType::Object)
-		throw JsonTypeException("JsonValue was casted to OBJECT but the underlying type was " + jsonTypeToString(m_type));
+Json::JsonObject Json::JsonValue::toObject() const {
+	if (m_type != Json::JsonType::Object)
+		throw Json::JsonTypeException("JsonValue was casted to OBJECT but the underlying type was " + jsonTypeToString(m_type));
 	return *o_value;
 }
 
-JsonArray JsonValue::toArray() const {
-	if (m_type != JsonType::Array)
-		throw JsonTypeException("JsonValue was casted to ARRAY but the underlying type was " + jsonTypeToString(m_type));
+Json::JsonArray Json::JsonValue::toArray() const {
+	if (m_type != Json::JsonType::Array)
+		throw Json::JsonTypeException("JsonValue was casted to ARRAY but the underlying type was " + jsonTypeToString(m_type));
 	return *a_value;
 }
 
-bool JsonValue::operator==(const JsonValue& other) const {
+bool Json::JsonValue::operator==(const Json::JsonValue& other) const {
     if (m_type != other.m_type)
         return false;
 
     switch (m_type) {
-        case JsonType::Bool: return b_value == other.b_value;
-        case JsonType::Integer: return i_value == other.i_value;
-        case JsonType::Double: return d_value == other.d_value;
-        case JsonType::String: return *s_value == *other.s_value;
-        case JsonType::Object: return *o_value == *other.o_value;
-        case JsonType::Array: return *a_value == *other.a_value;
-        case JsonType::Null: return true;
+        case Json::JsonType::Bool: return b_value == other.b_value;
+        case Json::JsonType::Integer: return i_value == other.i_value;
+        case Json::JsonType::Double: return d_value == other.d_value;
+        case Json::JsonType::String: return *s_value == *other.s_value;
+        case Json::JsonType::Object: return *o_value == *other.o_value;
+        case Json::JsonType::Array: return *a_value == *other.a_value;
+        case Json::JsonType::Null: return true;
         default: return false;
     }
 }
 
-bool JsonValue::operator!=(const JsonValue &other) const {
+bool Json::JsonValue::operator!=(const Json::JsonValue &other) const {
     return !(*this == other);
 }
 
-JsonValue& JsonValue::operator=(const bool& value) {
+Json::JsonValue& Json::JsonValue::operator=(const bool& value) {
 	this->~JsonValue();
 	b_value = value;
-	m_type = JsonType::Bool;
+	m_type = Json::JsonType::Bool;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const int& value) {
+Json::JsonValue& Json::JsonValue::operator=(const int& value) {
 	this->~JsonValue();
 	i_value = value;
-	m_type = JsonType::Integer;
+	m_type = Json::JsonType::Integer;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const double& value) {
+Json::JsonValue& Json::JsonValue::operator=(const double& value) {
 	this->~JsonValue();
 	d_value = value;
-	m_type = JsonType::Double;
+	m_type = Json::JsonType::Double;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const char* value) {
+Json::JsonValue& Json::JsonValue::operator=(const char* value) {
 	this->~JsonValue();
-	s_value = new string(value);
-	m_type = JsonType::String;
+	s_value = new std::string(value);
+	m_type = Json::JsonType::String;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const string& value) {
+Json::JsonValue& Json::JsonValue::operator=(const std::string& value) {
 	this->~JsonValue();
-	s_value = new string(value);
-	m_type = JsonType::String;
+	s_value = new std::string(value);
+	m_type = Json::JsonType::String;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const JsonObject& value) {
+Json::JsonValue& Json::JsonValue::operator=(const Json::JsonObject& value) {
 	this->~JsonValue();
-	o_value = new JsonObject(value);
-	m_type = JsonType::Object;
+	o_value = new Json::JsonObject(value);
+	m_type = Json::JsonType::Object;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const JsonArray& value) {
+Json::JsonValue& Json::JsonValue::operator=(const Json::JsonArray& value) {
 	this->~JsonValue();
-	a_value = new JsonArray(value);
-	m_type = JsonType::Array;
+	a_value = new Json::JsonArray(value);
+	m_type = Json::JsonType::Array;
 	return *this;
 }
 
-JsonValue& JsonValue::operator=(const JsonValue& value) {
+Json::JsonValue& Json::JsonValue::operator=(const Json::JsonValue& value) {
     if (this != &value) {
         this->~JsonValue();
-        new (this) JsonValue(value);  // "placement new" (Replaces memory of object by copying over)
+        new (this) Json::JsonValue(value);  // "placement new" (Replaces memory of object by copying over)
     }
     return *this;
 }
 
-JsonValue& JsonValue::operator=(nullptr_t) {
+Json::JsonValue& Json::JsonValue::operator=(nullptr_t) {
 	this->~JsonValue();
-	m_type = JsonType::Null;
+	m_type = Json::JsonType::Null;
 	return *this;
 }
 
 std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
 	switch (value.m_type) {
-		case JsonType::Bool: os << (value.b_value ? JSON_BOOLTRUE_LITERAL : JSON_BOOLFALSE_LITERAL); break;
-		case JsonType::Integer: os << value.i_value; break;
-		case JsonType::Double: os << value.d_value; break;
-		case JsonType::String: os << JSONSTRING_DELIMITER << escapeString(*value.s_value) << JSONSTRING_DELIMITER; break;
-		case JsonType::Object: os << serializeObject(*value.o_value); break;
-		case JsonType::Array: os << serializeArray(*value.a_value); break;
-		case JsonType::Null: os << JSON_NULL_LITERAL; break;
+		case Json::JsonType::Bool: os << (value.b_value ? JSON_BOOLTRUE_LITERAL : JSON_BOOLFALSE_LITERAL); break;
+		case Json::JsonType::Integer: os << value.i_value; break;
+		case Json::JsonType::Double: os << value.d_value; break;
+		case Json::JsonType::String: os << JSONSTRING_DELIMITER << escapeString(*value.s_value) << JSONSTRING_DELIMITER; break;
+		case Json::JsonType::Object: os << serializeObject(*value.o_value); break;
+		case Json::JsonType::Array: os << serializeArray(*value.a_value); break;
+		case Json::JsonType::Null: os << JSON_NULL_LITERAL; break;
 		default: break;
 	}
 	return os;
 }
 
-string Json::toJsonString(const JsonValue& value) {
-	stringstream stream;
+std::string Json::toJsonString(const Json::JsonValue& value) {
+	std::stringstream stream;
 	stream << value;
 	return stream.str();
 }
 
-JsonValue Json::parseJson(const string& json) {
+Json::JsonValue Json::parseJson(const std::string& json) {
 	ValueMetaInfo valueInfo = findNextValue(json);
-	string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
+	std::string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
 	switch (valueInfo.type) {
-		case JsonType::Bool: return JsonValue(valueString == JSON_BOOLTRUE_LITERAL);
-		case JsonType::Integer:	return JsonValue(stoi(valueString));
-		case JsonType::Double: return JsonValue(stod(valueString));
-		case JsonType::String:
+		case Json::JsonType::Bool: return Json::JsonValue(valueString == JSON_BOOLTRUE_LITERAL);
+		case Json::JsonType::Integer: return Json::JsonValue(std::stoi(valueString));
+		case Json::JsonType::Double: return Json::JsonValue(std::stod(valueString));
+		case Json::JsonType::String:
 			// Cut off enclosing quotes
 			valueString = valueString.substr(1, valueString.length() - 2);
-			return JsonValue(parseEscapedString(valueString));
-		case JsonType::Object: return JsonValue(deserializeObject(valueString));
-		case JsonType::Array: return JsonValue(deserializeArray(valueString));
-		default: return JsonValue(nullptr);
+			return Json::JsonValue(parseEscapedString(valueString));
+		case Json::JsonType::Object: return Json::JsonValue(deserializeObject(valueString));
+		case Json::JsonType::Array: return Json::JsonValue(deserializeArray(valueString));
+		default: return Json::JsonValue(nullptr);
 	}
 }
