@@ -243,12 +243,6 @@ ValueMetaInfo findNextValue(const string& json, const size_t& from = 0) {
 	if (endValue == string::npos)
 		throw JsonMalformedException("Error finding json value end constraint for " + jsonTypeToString(type));
 
-	if (type == JsonType::String) {
-		// Cut off enclosing quotes
-		beginValue++;
-		endValue--;
-	}
-
 	return { beginValue , endValue, type };
 }
 
@@ -552,7 +546,10 @@ JsonValue Json::parseJson(const string& json) {
 		case JsonType::Bool: return JsonValue(valueString == JSON_BOOLTRUE_LITERAL);
 		case JsonType::Integer:	return JsonValue(stoi(valueString));
 		case JsonType::Double: return JsonValue(stod(valueString));
-		case JsonType::String: return JsonValue(parseEscapedString(valueString));
+		case JsonType::String:
+			// Cut off enclosing quotes
+			valueString = valueString.substr(1, valueString.length() - 2);
+			return JsonValue(parseEscapedString(valueString));
 		case JsonType::Object: return JsonValue(deserializeObject(valueString));
 		case JsonType::Array: return JsonValue(deserializeArray(valueString));
 		default: return JsonValue(nullptr);
