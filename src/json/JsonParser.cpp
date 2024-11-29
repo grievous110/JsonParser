@@ -234,7 +234,7 @@ Json::JsonType determineJsonType(const std::string& json, const size_t& valueSta
 KeyMetaInfo findNextKey(const std::string& json, const size_t& from = 0) {
 	size_t beginKey = findNextNonWSCharacter(json, from);
 	if (json[beginKey] != JSONSTRING_DELIMITER)
-		throw Json::JsonMalformedException("Unexpected character when searching for key in object");
+		throw Json::JsonMalformedException("Unexpected character when searching for key in json object");
 	if (beginKey == std::string::npos)
 		throw Json::JsonMalformedException("Error finding json key start");
 	
@@ -262,23 +262,44 @@ ValueMetaInfo findNextValue(const std::string& json, const size_t& from = 0) {
 
 ArrayElementResult parseNextJsonArrayValue(const std::string& jsonArray, const size_t& from) {
 	ValueMetaInfo valueInfo = findNextValue(jsonArray, from);
-	size_t commaPos = jsonArray.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
+	size_t commaPos = findNextNonWSCharacter(jsonArray, valueInfo.endIndex + 1);
+	if (commaPos == std::string::npos)
+		throw Json::JsonMalformedException("Unexpected end of json array");
+
+	char nextChar = jsonArray[commaPos];
+	if (nextChar != JSONVALUE_DELIMITER && nextChar != JSONARRAY_ENDDELIMITER)
+        throw Json::JsonMalformedException("Unexpected character when searching for separator or closure in json array");
+
+	if (nextChar == JSONARRAY_ENDDELIMITER) {
+        commaPos = std::string::npos; // Signal for calling function that end of array is reached
+    }
+
 	Json::JsonValue value = Json::parseJson(jsonArray.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1));
 	return { { value } , commaPos };
 }
 
 ObjectElementResult parseNextJsonKeyValuePair(const std::string& json, const size_t& from) {
 	KeyMetaInfo keyInfo = findNextKey(json, from);
-	size_t colonPos = json.find(JSONKEYVALUE_SEPERATOR, keyInfo.endIndex + 1);
-	if (colonPos == std::string::npos)
-		throw Json::JsonMalformedException("Error finding json constraints");
+	size_t colonPos = findNextNonWSCharacter(json, keyInfo.endIndex + 1);
+	if (colonPos == std::string::npos || json[colonPos] != JSONKEYVALUE_SEPERATOR)
+		throw Json::JsonMalformedException("Error finding json key value seperator");
 
 	ValueMetaInfo valueInfo = findNextValue(json, colonPos + 1);
 
-	size_t commaPos = json.find(JSONVALUE_DELIMITER, valueInfo.endIndex);
+	size_t commaPos = findNextNonWSCharacter(json, valueInfo.endIndex + 1);
+	if (commaPos == std::string::npos)
+		throw Json::JsonMalformedException("Unexpected end of json object");
 
-	// Deserialize child value
+	char nextChar = json[commaPos];
+	if (nextChar != JSONVALUE_DELIMITER && nextChar != JSONOBJECT_ENDDELIMITER)
+        throw Json::JsonMalformedException("Unexpected character when searching for separator or closure in json array");
+
+	if (nextChar == JSONOBJECT_ENDDELIMITER) {
+        commaPos = std::string::npos; // Signal for calling function that end of object is reached
+    }
+
 	std::string keyString = json.substr(keyInfo.startIndex + 1, keyInfo.endIndex - keyInfo.startIndex - 1);
+	// Deserialize child value
 	std::string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
 	Json::JsonValue value = Json::parseJson(valueString);
 
@@ -332,7 +353,7 @@ Json::JsonArray deserializeArray(const std::string& jsonArray) {
         return array;
     }
 
-	while (index < end) {
+	while (index <= end) {
 		ArrayElementResult result = parseNextJsonArrayValue(jsonArray, index);
 		array.push_back(result.value);
 		if (result.nextSeparatorPos == std::string::npos) {
@@ -354,7 +375,7 @@ Json::JsonObject deserializeObject(const std::string& jsonObj) {
         return obj;
     }
 
-	while (index < end) {
+	while (index <= end) {
 		ObjectElementResult result = parseNextJsonKeyValuePair(jsonObj, index);
 		obj.insert(result.entry);
 		if (result.nextSeparatorPos == std::string::npos) {
@@ -555,6 +576,13 @@ std::string Json::toJsonString(const Json::JsonValue& value) {
 Json::JsonValue Json::parseJson(const std::string& json) {
 	ValueMetaInfo valueInfo = findNextValue(json);
 	std::string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
+
+	// Check if there is anything after the value (outside of the value bounds) that isn't whitespace
+    size_t nextNonWS = findNextNonWSCharacter(json, valueInfo.endIndex + 1);
+    if (nextNonWS != std::string::npos) {
+        throw Json::JsonMalformedException("Unexpected characters after json value");
+    }
+
 	switch (valueInfo.type) {
 		case Json::JsonType::Bool: return Json::JsonValue(valueString == JSON_BOOLTRUE_LITERAL);
 		case Json::JsonType::Integer: return Json::JsonValue(std::stoi(valueString));
