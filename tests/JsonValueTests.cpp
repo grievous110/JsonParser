@@ -1,10 +1,132 @@
 #include "json/JsonParser.h"
 #include <gtest/gtest.h>
 
-// Demonstrate some basic assertions.
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+namespace Json {
+
+TEST(JsonValueTests, DefaultConstructor) {
+    JsonValue value;
+    EXPECT_TRUE(value.isNull());
+    EXPECT_EQ(value.type(), JsonType::Null);
+}
+
+TEST(JsonValueTests, BoolValue) {
+    JsonValue value(true);
+    EXPECT_TRUE(value.isBool());
+    EXPECT_EQ(value.type(), JsonType::Bool);
+    EXPECT_EQ(value.toBool(), true);
+}
+
+TEST(JsonValueTests, IntValue) {
+    JsonValue value(42);
+    EXPECT_TRUE(value.isInt());
+    EXPECT_EQ(value.type(), JsonType::Integer);
+    EXPECT_EQ(value.toInt(), 42);
+}
+
+TEST(JsonValueTests, DoubleValue) {
+    JsonValue value(3.14);
+    EXPECT_TRUE(value.isDouble());
+    EXPECT_EQ(value.type(), JsonType::Double);
+    EXPECT_DOUBLE_EQ(value.toDouble(), 3.14);
+}
+
+TEST(JsonValueTests, StringValue) {
+    JsonValue value("hello");
+    EXPECT_TRUE(value.isString());
+    EXPECT_EQ(value.type(), JsonType::String);
+    EXPECT_EQ(value.toString(), "hello");
+}
+
+TEST(JsonValueTests, ObjectValue) {
+    JsonObject obj = {{"key", 42}};
+    JsonValue value(obj);
+
+    EXPECT_TRUE(value.isObject());
+    EXPECT_EQ(value.type(), JsonType::Object);
+    JsonObject newObj = value.toObject();
+    EXPECT_EQ(newObj["key"].toInt(), 42);
+}
+
+TEST(JsonValueTests, ArrayValue) {
+    JsonArray arr = {1, 3.2, true};
+    JsonValue value(arr);
+
+    EXPECT_TRUE(value.isArray());
+    EXPECT_EQ(value.type(), JsonType::Array);
+    JsonArray newArray = value.toArray();
+    ASSERT_EQ(newArray.size(), 3);
+    EXPECT_EQ(newArray[0].toInt(), 1);
+    EXPECT_EQ(newArray[1].toDouble(), 3.2);
+    EXPECT_EQ(newArray[2].toBool(), true);
+}
+
+TEST(JsonValueTests, AssignmentOperators) {
+    JsonValue value;
+    value = 10;
+    EXPECT_TRUE(value.isInt());
+    EXPECT_EQ(value.toInt(), 10);
+
+    value = 3.14;
+    EXPECT_TRUE(value.isDouble());
+    EXPECT_DOUBLE_EQ(value.toDouble(), 3.14);
+
+    value = "hello";
+    EXPECT_TRUE(value.isString());
+    EXPECT_EQ(value.toString(), "hello");
+
+    JsonObject obj = {{"key", true}};
+    value = obj;
+    EXPECT_TRUE(value.isObject());
+    EXPECT_EQ(value.toObject()["key"].toBool(), true);
+
+    JsonArray arr = {1, "two"};
+    value = arr;
+    EXPECT_TRUE(value.isArray());
+    EXPECT_EQ(value.toArray()[0].toInt(), 1);
+    EXPECT_EQ(value.toArray()[1].toString(), "two");
+
+    value = nullptr;
+    EXPECT_TRUE(value.isNull());
+}
+
+TEST(JsonValueTests, ComparisonOperators) {
+    JsonValue val1(42);
+    JsonValue val2(42);
+    JsonValue val3("hello");
+    EXPECT_EQ(val1, val2);
+    EXPECT_NE(val1, val3);
+}
+
+TEST(JsonValueTests, GetValueObject) {
+    JsonObject obj = {{"key", JsonValue(42)}};
+    JsonValue value(obj);
+
+    EXPECT_NO_THROW(value.getValue("key"));
+    EXPECT_EQ(value.getValue("key").toInt(), 42);
+    EXPECT_THROW(value.getValue("nonexistent"), std::out_of_range);
+}
+
+TEST(JsonValueTests, GetValueArray) {
+    JsonArray arr = {JsonValue(1), JsonValue(2), JsonValue(3)};
+    JsonValue value(arr);
+
+    EXPECT_NO_THROW(value.getValue(0));
+    EXPECT_EQ(value.getValue(0).toInt(), 1);
+    EXPECT_THROW(value.getValue(10), std::out_of_range);
+}
+
+TEST(JsonValueTests, TypeConversionExceptions) {
+    JsonValue value1("hello");
+    JsonValue value2(42);
+
+    EXPECT_THROW(value1.toInt(), JsonTypeException);
+    EXPECT_THROW(value1.toArray(), JsonTypeException);
+
+    EXPECT_THROW(value2.toDouble(), JsonTypeException);
+    EXPECT_THROW(value2.toBool(), JsonTypeException);
+
+    JsonValue nullValue;
+    EXPECT_THROW(nullValue.toString(), JsonTypeException);
+}
+
 }
