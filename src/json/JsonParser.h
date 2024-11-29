@@ -1,7 +1,7 @@
 #ifndef JSONPARSER_H
 #define JSONPARSER_H
 
-#include <map>
+#include <unordered_map>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -28,7 +28,7 @@ namespace Json {
 	};
 
 	class JsonValue;
-	using JsonObject = std::map<std::string, JsonValue>;
+	using JsonObject = std::unordered_map<std::string, JsonValue>;
 	using JsonObjectEntry = std::pair<std::string, JsonValue>;
 	using JsonArray = std::vector<JsonValue>;
 
