@@ -39,7 +39,7 @@ constexpr inline bool isJsonWhitespace(const char& c) noexcept {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-std::string parseEscapedString(const std::string& input) {
+std::string parseJsonStringValue(const std::string& input) {
     std::stringstream result;
     size_t i = 0;
     while (i < input.length()) {
@@ -59,8 +59,14 @@ std::string parseEscapedString(const std::string& input) {
                         throw Json::JsonMalformedException("Unsupported or invalid escape sequence in json string");
                 }
                 i++;  // Skip the escape character
-            }
+			} else {
+				throw Json::JsonMalformedException("Trailing escape character at end of string");
+			}
         } else {
+            // Check for raw invalid characters, including control chars [0-31] and special chars
+            if (input[i] < 32 || input[i] == '\"' || input[i] == '\\') {
+                throw Json::JsonMalformedException("Invalid unescaped raw character in json string");
+            }
             result << input[i];
         }
         i++;
@@ -276,7 +282,7 @@ ObjectElementResult parseNextJsonKeyValuePair(const std::string& json, const siz
 	std::string valueString = json.substr(valueInfo.startIndex, valueInfo.endIndex - valueInfo.startIndex + 1);
 	Json::JsonValue value = Json::parseJson(valueString);
 
-	return { { parseEscapedString(keyString), value }, commaPos };
+	return { { parseJsonStringValue(keyString), value }, commaPos };
 }
 
 std::string serializeArray(const Json::JsonArray& array) {
@@ -556,7 +562,7 @@ Json::JsonValue Json::parseJson(const std::string& json) {
 		case Json::JsonType::String:
 			// Cut off enclosing quotes
 			valueString = valueString.substr(1, valueString.length() - 2);
-			return Json::JsonValue(parseEscapedString(valueString));
+			return Json::JsonValue(parseJsonStringValue(valueString));
 		case Json::JsonType::Object: return Json::JsonValue(deserializeObject(valueString));
 		case Json::JsonType::Array: return Json::JsonValue(deserializeArray(valueString));
 		default: return Json::JsonValue(nullptr);

@@ -12,6 +12,13 @@ file(GLOB_RECURSE LIB_SOURCES "src/json/*.cpp")
 
 add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 
+# Add a target for the demo program (main.cpp)
+add_executable(${PROJECT_NAME}_DEMO demo/main.cpp)
+
+target_include_directories(${PROJECT_NAME}_DEMO PRIVATE src)
+
+target_link_libraries(${PROJECT_NAME}_DEMO ${PROJECT_NAME})
+
 enable_testing()
 
 include(FetchContent)
