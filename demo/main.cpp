@@ -9,8 +9,9 @@ using namespace Json;
 
 int main() {
     try {
-        string invalidJson = "{\"key\": \"value\"quote\"}";
-        parseJson(invalidJson);
+        string invalidJson = "123,";
+        JsonValue val = parseJson(invalidJson);
+        cout << val << endl;
 
         // Create JsonValue objects
         JsonValue boolVal(true);

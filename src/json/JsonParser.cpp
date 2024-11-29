@@ -12,6 +12,10 @@
 #define JSONARRAY_STARTDELIMITER '['
 #define JSONARRAY_ENDDELIMITER ']'
 
+constexpr size_t nullLiteralLength = sizeof(JSON_NULL_LITERAL) - 1; // Exclude \0
+constexpr size_t trueLiteralLength = sizeof(JSON_BOOLTRUE_LITERAL) - 1;
+constexpr size_t falseLiteralLength = sizeof(JSON_BOOLFALSE_LITERAL) - 1;
+
 struct ObjectElementResult {
 	const Json::JsonObjectEntry entry;
 	const size_t nextSeparatorPos;
@@ -101,27 +105,89 @@ size_t findNextNonWSCharacter(const std::string& string, const size_t& off = 0) 
 	return std::string::npos;
 }
 
-size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, const size_t& valueStart = 0) {
-    if (type == Json::JsonType::Bool || type == Json::JsonType::Integer || type == Json::JsonType::Double || type == Json::JsonType::Null) {
-        for (size_t i = valueStart; i < json.length(); i++) {
-            // Check for delimiters, spaces, or end of the number
-            if (isJsonWhitespace(json[i]) || json[i] == JSONVALUE_DELIMITER || json[i] == JSONOBJECT_ENDDELIMITER || json[i] == JSONARRAY_ENDDELIMITER) {
-                return i - 1;
-            }
+// size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, const size_t& valueStart = 0) {
+//     if (type == Json::JsonType::Bool || type == Json::JsonType::Integer || type == Json::JsonType::Double || type == Json::JsonType::Null) {
+//         for (size_t i = valueStart; i < json.length(); i++) {
+//             // Check for delimiters, spaces, or end of the number
+//             if (isJsonWhitespace(json[i]) || json[i] == JSONVALUE_DELIMITER || json[i] == JSONOBJECT_ENDDELIMITER || json[i] == JSONARRAY_ENDDELIMITER) {
+//                 return i - 1;
+//             }
 
-            // Additional check for valid numeric format are not needed here and should be handled in determineJsonType beforehand
+//             // Additional check for valid numeric format are not needed here and should be handled in determineJsonType beforehand
+//         }
+// 		// Always return from cause they might be raw unenclosed types
+// 		return json.length() - 1;
+//     } else if (type == Json::JsonType::Object) {
+//         int count = 0; // Tracks nested objects
+//         for (size_t i = valueStart; i < json.length(); i++) {
+//             if (json[i] == JSONOBJECT_STARTDELIMITER) {
+//                 count++;
+//             } else if (json[i] == JSONOBJECT_ENDDELIMITER) {
+//                 if (--count == 0) { // Properly closed object
+//                     return i;
+//                 }
+//             } else if (json[i] == JSONSTRING_DELIMITER) {
+//                 // Skip strings within the object
+//                 i = findEndIndexFor(json, Json::JsonType::String, i);
+// 				if (i == std::string::npos)
+// 					throw Json::JsonMalformedException("Unclosed double quotes in json");
+//             }
+//         }
+//     } else if (type == Json::JsonType::Array) {
+//         int count = 0; // Tracks nested arrays
+//         for (size_t i = valueStart; i < json.length(); i++) {
+//             if (json[i] == JSONARRAY_STARTDELIMITER) {
+//                 count++;
+//             } else if (json[i] == JSONARRAY_ENDDELIMITER) {
+//                 if (--count == 0) { // Properly closed array
+//                     return i;
+//                 }
+//             } else if (json[i] == JSONSTRING_DELIMITER) {
+//                 // Skip strings within the array
+//                 i = findEndIndexFor(json, Json::JsonType::String, i);
+// 				if (i == std::string::npos)
+// 					throw Json::JsonMalformedException("Unclosed double quotes in json");
+//             }
+//         }
+//     } else if (type == Json::JsonType::String) {
+//         for (size_t i = valueStart + 1; i < json.length(); i++) {
+// 			if (json[i] == JSONSTRING_DELIMITER) {
+// 				// If its not an escaped quote set it as delimiter
+// 				if (json[i - 1] != '\\') {
+// 					return i;
+//             	}
+//             }
+//         }
+//     }
+
+//     return std::string::npos;
+// }
+
+size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, const size_t& valueStart = 0) {
+    if (type == Json::JsonType::Bool || type == Json::JsonType::Null) {
+		switch (json[valueStart]) {
+			case JSON_BOOLTRUE_LITERAL[0]: return trueLiteralLength;
+			case JSON_BOOLFALSE_LITERAL[0]: return falseLiteralLength;
+			case JSON_NULL_LITERAL[0]: return nullLiteralLength;
+		}
+	} else if (type == Json::JsonType::Integer || type == Json::JsonType::Double) {
+		// Already validated in `determineJsonType`, just find the delimiter
+        size_t endIdx = valueStart;
+        while (endIdx < json.length() && 
+              !isJsonWhitespace(json[endIdx]) && 
+              json[endIdx] != JSONVALUE_DELIMITER && 
+              json[endIdx] != JSONOBJECT_ENDDELIMITER && 
+              json[endIdx] != JSONARRAY_ENDDELIMITER) {
+            endIdx++;
         }
-		// Always return from cause they might be raw unenclosed types
-		return json.length() - 1;
+        return endIdx - 1;
     } else if (type == Json::JsonType::Object) {
         int count = 0; // Tracks nested objects
         for (size_t i = valueStart; i < json.length(); i++) {
             if (json[i] == JSONOBJECT_STARTDELIMITER) {
                 count++;
             } else if (json[i] == JSONOBJECT_ENDDELIMITER) {
-                if (--count == 0) { // Properly closed object
-                    return i;
-                }
+                if (--count == 0) return i; // Properly closed object
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the object
                 i = findEndIndexFor(json, Json::JsonType::String, i);
@@ -135,9 +201,7 @@ size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, cons
             if (json[i] == JSONARRAY_STARTDELIMITER) {
                 count++;
             } else if (json[i] == JSONARRAY_ENDDELIMITER) {
-                if (--count == 0) { // Properly closed array
-                    return i;
-                }
+                if (--count == 0) return i; // Properly closed array
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the array
                 i = findEndIndexFor(json, Json::JsonType::String, i);
@@ -147,11 +211,9 @@ size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, cons
         }
     } else if (type == Json::JsonType::String) {
         for (size_t i = valueStart + 1; i < json.length(); i++) {
-			if (json[i] == JSONSTRING_DELIMITER) {
-				// If its not an escaped quote set it as delimiter
-				if (json[i - 1] != '\\') {
-					return i;
-            	}
+			// If its not an escaped quote set it as delimiter
+			if (json[i] == JSONSTRING_DELIMITER && json[i - 1] != '\\') {
+				return i;
             }
         }
     }
@@ -177,59 +239,132 @@ bool validateIdentifier(const std::string& json, const std::string& identifier, 
 }
 
 Json::JsonType determineJsonType(const std::string& json, const size_t& valueStart = 0) {
-	if (json[valueStart] == JSON_BOOLTRUE_LITERAL[0]) {
-		if (validateIdentifier(json, JSON_BOOLTRUE_LITERAL, valueStart)) {
-			return Json::JsonType::Bool;
-		}
-	} else if (json[valueStart] == JSON_BOOLFALSE_LITERAL[0]) {
-		if (validateIdentifier(json, JSON_BOOLFALSE_LITERAL, valueStart)) {
-			return Json::JsonType::Bool;
-		}
-	} else if (isdigit(json[valueStart]) || json[valueStart] == '-') { // Json standard prohibits a leading + for numbers
-		size_t index = valueStart + (json[valueStart] == '-' ? 1 : 0);
+    if (json[valueStart] == JSON_BOOLTRUE_LITERAL[0] && validateIdentifier(json, JSON_BOOLTRUE_LITERAL, valueStart)) {
+        return Json::JsonType::Bool;
+    } else if (json[valueStart] == JSON_BOOLFALSE_LITERAL[0] && validateIdentifier(json, JSON_BOOLFALSE_LITERAL, valueStart)) {
+        return Json::JsonType::Bool;
+    } else if (isdigit(json[valueStart]) || json[valueStart] == '-') { // Handle numeric types
+        size_t index = valueStart;
         bool hasDot = false;
         bool hasExponent = false;
 
+        if (json[index] == '-') {
+			index++; // Skip the negative sign
+			// Check for -0 which is not allowed
+			if (json[index] == '0' && index + 1 == json.size()) {
+				throw Json::JsonMalformedException("Invalid number format: '-0' is not allowed in JSON");
+			}
+		}
+
+		// Check for leading zeros
+		if (json[index] == '0' && index + 1 < json.size() && isdigit(json[index + 1])) {
+			throw Json::JsonMalformedException("Leading zeros are not allowed in JSON numbers");
+		}
+		
+        if (index >= json.size() || !isdigit(json[index])) {
+            throw Json::JsonMalformedException("Invalid number format: no digits after '-' or leading non-digit");
+        }
+
+
         while (index < json.size() && (isdigit(json[index]) || json[index] == '.' || json[index] == 'e' || json[index] == 'E')) {
             if (json[index] == '.') {
-                if (hasDot) // A second dot invalidates the number
-					throw Json::JsonMalformedException("Invalid json number format: multiple decimal points");
+                if (hasDot)
+					throw Json::JsonMalformedException("Invalid number format: multiple decimal points");
                 hasDot = true;
             } else if (json[index] == 'e' || json[index] == 'E') {
-                if (hasExponent) // A second exponent marker invalidates the number
-					throw Json::JsonMalformedException("Invalid json number format: multiple exponents");
+                if (hasExponent)
+					throw Json::JsonMalformedException("Invalid number format: multiple exponents");
                 hasExponent = true;
 
-                // Expect a number after 'e' or 'E', possibly with a sign
-                if (index + 1 < json.size() && (json[index + 1] == '+' || json[index + 1] == '-')) {
-                    index++; // Skip after sign
-                }
-
-				// Ensure there is at least one digit after the exponent
-                if (index + 1 >= json.size() || !isdigit(json[index + 1])) {
-                    throw Json::JsonMalformedException("Invalid json number format: incomplete exponent");
+                // Expect digits or sign after the exponent
+                index++;
+                if (index < json.size() && (json[index] == '+' || json[index] == '-')) {
+					index++; // Skip after sign
+				}
+                if (index >= json.size() || !isdigit(json[index])) {
+                    throw Json::JsonMalformedException("Invalid number format: incomplete exponent");
                 }
             }
-        	index++;
+            index++;
         }
 
-        if (hasDot || hasExponent) {
-            return Json::JsonType::Double;
+		// Check if it ends with valid delimiters or whitespace
+        if (index < json.size() && !isJsonWhitespace(json[index]) &&
+            json[index] != JSONVALUE_DELIMITER &&
+            json[index] != JSONOBJECT_ENDDELIMITER &&
+            json[index] != JSONARRAY_ENDDELIMITER) {
+            throw Json::JsonMalformedException("Invalid character in number");
         }
-        return Json::JsonType::Integer;
-	} else if (json[valueStart] == JSONSTRING_DELIMITER) {
-		return Json::JsonType::String;
-	} else if (json[valueStart] == JSONOBJECT_STARTDELIMITER) {
-		return Json::JsonType::Object;
-	} else if (json[valueStart] == JSONARRAY_STARTDELIMITER) {
-		return Json::JsonType::Array;
-	} else if (json[valueStart] == JSON_NULL_LITERAL[0]) {
-		if (validateIdentifier(json, JSON_NULL_LITERAL, valueStart)) {
-			return Json::JsonType::Null;
-		}
-	}
-	throw Json::JsonMalformedException("Could not determine json type");
+
+
+        // Finalize the type
+        return (hasDot || hasExponent) ? Json::JsonType::Double : Json::JsonType::Integer;
+    } else if (json[valueStart] == JSONSTRING_DELIMITER) {
+        return Json::JsonType::String;
+    } else if (json[valueStart] == JSONOBJECT_STARTDELIMITER) {
+        return Json::JsonType::Object;
+    } else if (json[valueStart] == JSONARRAY_STARTDELIMITER) {
+        return Json::JsonType::Array;
+    } else if (json[valueStart] == JSON_NULL_LITERAL[0] && validateIdentifier(json, JSON_NULL_LITERAL, valueStart)) {
+        return Json::JsonType::Null;
+    }
+    throw Json::JsonMalformedException("Unable to determine JSON type");
 }
+
+// Json::JsonType determineJsonType(const std::string& json, const size_t& valueStart = 0) {
+// 	if (json[valueStart] == JSON_BOOLTRUE_LITERAL[0]) {
+// 		if (validateIdentifier(json, JSON_BOOLTRUE_LITERAL, valueStart)) {
+// 			return Json::JsonType::Bool;
+// 		}
+// 	} else if (json[valueStart] == JSON_BOOLFALSE_LITERAL[0]) {
+// 		if (validateIdentifier(json, JSON_BOOLFALSE_LITERAL, valueStart)) {
+// 			return Json::JsonType::Bool;
+// 		}
+// 	} else if (isdigit(json[valueStart]) || json[valueStart] == '-') { // Json standard prohibits a leading + for numbers
+// 		size_t index = valueStart + (json[valueStart] == '-' ? 1 : 0);
+//         bool hasDot = false;
+//         bool hasExponent = false;
+
+//         while (index < json.size() && (isdigit(json[index]) || json[index] == '.' || json[index] == 'e' || json[index] == 'E')) {
+//             if (json[index] == '.') {
+//                 if (hasDot) // A second dot invalidates the number
+// 					throw Json::JsonMalformedException("Invalid json number format: multiple decimal points");
+//                 hasDot = true;
+//             } else if (json[index] == 'e' || json[index] == 'E') {
+//                 if (hasExponent) // A second exponent marker invalidates the number
+// 					throw Json::JsonMalformedException("Invalid json number format: multiple exponents");
+//                 hasExponent = true;
+
+//                 // Expect a number after 'e' or 'E', possibly with a sign
+//                 if (index + 1 < json.size() && (json[index + 1] == '+' || json[index + 1] == '-')) {
+//                     index++; // Skip after sign
+//                 }
+
+// 				// Ensure there is at least one digit after the exponent
+//                 if (index + 1 >= json.size() || !isdigit(json[index + 1])) {
+//                     throw Json::JsonMalformedException("Invalid json number format: incomplete exponent");
+//                 }
+//             }
+//         	index++;
+//         }
+
+//         if (hasDot || hasExponent) {
+//             return Json::JsonType::Double;
+//         }
+//         return Json::JsonType::Integer;
+// 	} else if (json[valueStart] == JSONSTRING_DELIMITER) {
+// 		return Json::JsonType::String;
+// 	} else if (json[valueStart] == JSONOBJECT_STARTDELIMITER) {
+// 		return Json::JsonType::Object;
+// 	} else if (json[valueStart] == JSONARRAY_STARTDELIMITER) {
+// 		return Json::JsonType::Array;
+// 	} else if (json[valueStart] == JSON_NULL_LITERAL[0]) {
+// 		if (validateIdentifier(json, JSON_NULL_LITERAL, valueStart)) {
+// 			return Json::JsonType::Null;
+// 		}
+// 	}
+// 	throw Json::JsonMalformedException("Could not determine json type");
+// }
 
 KeyMetaInfo findNextKey(const std::string& json, const size_t& from = 0) {
 	size_t beginKey = findNextNonWSCharacter(json, from);
