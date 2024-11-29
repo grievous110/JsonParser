@@ -33,6 +33,12 @@ struct ValueMetaInfo {
 	const Json::JsonType type;
 };
 
+constexpr inline bool isJsonWhitespace(const char& c) noexcept {
+	// Json only acepts those as valid ignorable whitespaces.
+	// isspace method allows further things that are invalid in json.
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
 std::string parseEscapedString(const std::string& input) {
     std::stringstream result;
     size_t i = 0;
@@ -82,7 +88,7 @@ std::string escapeString(const std::string& input) {
 
 size_t findNextNonWSCharacter(const std::string& string, const size_t& off = 0) {
 	for (size_t i = off; i < string.length(); i++) {
-		if (!isspace(string[i])) {
+		if (!isJsonWhitespace(string[i])) {
 			return i;
 		}
 	}
@@ -93,7 +99,7 @@ size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, cons
     if (type == Json::JsonType::Bool || type == Json::JsonType::Integer || type == Json::JsonType::Double || type == Json::JsonType::Null) {
         for (size_t i = valueStart; i < json.length(); i++) {
             // Check for delimiters, spaces, or end of the number
-            if (isspace(json[i]) || json[i] == JSONVALUE_DELIMITER || json[i] == JSONOBJECT_ENDDELIMITER || json[i] == JSONARRAY_ENDDELIMITER) {
+            if (isJsonWhitespace(json[i]) || json[i] == JSONVALUE_DELIMITER || json[i] == JSONOBJECT_ENDDELIMITER || json[i] == JSONARRAY_ENDDELIMITER) {
                 return i - 1;
             }
 
@@ -113,6 +119,8 @@ size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, cons
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the object
                 i = findEndIndexFor(json, Json::JsonType::String, i);
+				if (i == std::string::npos)
+					throw Json::JsonMalformedException("Unclosed double quotes in json");
             }
         }
     } else if (type == Json::JsonType::Array) {
@@ -127,6 +135,8 @@ size_t findEndIndexFor(const std::string& json, const Json::JsonType& type, cons
             } else if (json[i] == JSONSTRING_DELIMITER) {
                 // Skip strings within the array
                 i = findEndIndexFor(json, Json::JsonType::String, i);
+				if (i == std::string::npos)
+					throw Json::JsonMalformedException("Unclosed double quotes in json");
             }
         }
     } else if (type == Json::JsonType::String) {
@@ -216,7 +226,9 @@ Json::JsonType determineJsonType(const std::string& json, const size_t& valueSta
 }
 
 KeyMetaInfo findNextKey(const std::string& json, const size_t& from = 0) {
-	size_t beginKey = json.find(JSONSTRING_DELIMITER, from);
+	size_t beginKey = findNextNonWSCharacter(json, from);
+	if (json[beginKey] != JSONSTRING_DELIMITER)
+		throw Json::JsonMalformedException("Unexpected character when searching for key in object");
 	if (beginKey == std::string::npos)
 		throw Json::JsonMalformedException("Error finding json key start");
 	
@@ -508,7 +520,7 @@ Json::JsonValue& Json::JsonValue::operator=(const Json::JsonValue& value) {
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(nullptr_t) {
+Json::JsonValue& Json::JsonValue::operator=(std::nullptr_t) {
 	this->~JsonValue();
 	m_type = Json::JsonType::Null;
 	return *this;
