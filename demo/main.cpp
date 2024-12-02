@@ -1,17 +1,12 @@
-
 // A small demo .cpp wich illustrates how to use the values
 
 #include "json/JsonParser.h"
 #include <iostream>
 
-using namespace std;
 using namespace Json;
 
 int main() {
     try {
-        string invalidJson = "{\"key\": \"value\"quote\"}";
-        parseJson(invalidJson);
-
         // Create JsonValue objects
         JsonValue boolVal(true);
         JsonValue intVal(42);
@@ -42,8 +37,8 @@ int main() {
         std::cout << "Converted to native Double Value: " << doubleVal.toDouble() << std::endl;
         std::cout << "Converted to native String Value: " << stringVal.toString() << std::endl;
 
-        std::cout << "Object Value (key1): " << objVal.getValue("key1") << std::endl;
-        std::cout << "Array Value (index 1): " << arrVal.getValue(1) << std::endl;
+        std::cout << "Object Value (key1): " << objVal["key1"] << std::endl;
+        std::cout << "Array Value (index 1): " << arrVal[1] << std::endl;
 
         // Serialization
         std::string jsonString = toJsonString(objVal);
@@ -51,7 +46,7 @@ int main() {
 
         // Deserialization
         JsonValue parsedJson = parseJson(jsonString);
-        std::cout << "Parsed JSON Object Value (key1): " << parsedJson.getValue("key1") << std::endl;
+        std::cout << "Parsed JSON Object Value (key1): " << parsedJson["key1"] << std::endl;
 
         // Checking types
         std::cout << "Type of objVal: " << jsonTypeToString(objVal.type()) << std::endl;
@@ -67,8 +62,8 @@ int main() {
         JsonValue nullVal(nullptr);
         std::cout << "Null Value type: " << jsonTypeToString(nullVal.type()) << std::endl;
         std::cout << "Is Null: " << nullVal.isNull() << std::endl;
-    } catch (exception& e) {
-        cerr << e.what() << endl;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;
