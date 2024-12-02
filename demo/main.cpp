@@ -4,7 +4,6 @@
 #include "json/JsonParser.h"
 #include <iostream>
 
-using namespace std;
 using namespace Json;
 
 int main() {
@@ -64,8 +63,8 @@ int main() {
         JsonValue nullVal(nullptr);
         std::cout << "Null Value type: " << jsonTypeToString(nullVal.type()) << std::endl;
         std::cout << "Is Null: " << nullVal.isNull() << std::endl;
-    } catch (exception& e) {
-        cerr << e.what() << endl;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;
