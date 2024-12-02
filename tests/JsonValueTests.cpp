@@ -97,8 +97,28 @@ TEST(JsonValueTests, ComparisonOperators) {
     EXPECT_NE(val1, val3);
 }
 
+TEST(JsonValueTests, OperatorAccessObject) {
+    JsonObject obj = {{"key", 42}};
+    JsonValue value(obj);
+
+    EXPECT_NO_THROW(value["key"]); // Access existing key
+    EXPECT_EQ(value["key"].toInt(), 42); // Check the value
+    EXPECT_THROW(value["nonexistent"], std::out_of_range); // Access nonexistent key
+}
+
+TEST(JsonValueTests, OperatorAccessArray) {
+    JsonArray arr = {1, 2, 3};
+    JsonValue value(arr);
+
+    EXPECT_NO_THROW(value[0]); // Access valid index
+    EXPECT_EQ(value[0].toInt(), 1); // Check the value
+    EXPECT_NO_THROW(value[2]); // Access another valid index
+    EXPECT_EQ(value[2].toInt(), 3); // Check the value
+    EXPECT_THROW(value[10], std::out_of_range); // Access out-of-bounds index
+}
+
 TEST(JsonValueTests, GetValueObject) {
-    JsonObject obj = {{"key", JsonValue(42)}};
+    JsonObject obj = {{"key", 42}};
     JsonValue value(obj);
 
     EXPECT_NO_THROW(value.getValue("key"));
@@ -107,7 +127,7 @@ TEST(JsonValueTests, GetValueObject) {
 }
 
 TEST(JsonValueTests, GetValueArray) {
-    JsonArray arr = {JsonValue(1), JsonValue(2), JsonValue(3)};
+    JsonArray arr = {1, 2, 3};
     JsonValue value(arr);
 
     EXPECT_NO_THROW(value.getValue(0));
