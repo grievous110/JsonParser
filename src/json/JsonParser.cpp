@@ -531,6 +531,8 @@ Json::JsonValue& Json::JsonValue::getValue(const std::string& key) {
 Json::JsonValue& Json::JsonValue::getValue(size_t index) {
     if (m_type != Json::JsonType::Array)
         throw Json::JsonTypeException("Accessing index in non-array type");
+    if (index >= a_value->size())
+        throw std::out_of_range("Index out of range in JsonArray");
     return (*a_value)[index];
 }
 
