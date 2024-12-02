@@ -57,9 +57,9 @@ namespace Json {
 
     public:
         JsonValue() noexcept : m_type(JsonType::Null) {}
-        JsonValue(const bool& value) : b_value(value), m_type(JsonType::Bool) {}
-        JsonValue(const int& value) : i_value(value), m_type(JsonType::Integer) {}
-        JsonValue(const double& value) : d_value(value), m_type(JsonType::Double) {}
+        JsonValue(bool value) : b_value(value), m_type(JsonType::Bool) {}
+        JsonValue(int value) : i_value(value), m_type(JsonType::Integer) {}
+        JsonValue(double value) : d_value(value), m_type(JsonType::Double) {}
         JsonValue(const char* value) : s_value(new std::string(value)), m_type(JsonType::String) {}
         JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(JsonType::String) {}
         JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(JsonType::Object) {}
@@ -89,17 +89,17 @@ namespace Json {
         JsonArray toArray() const;
 
         JsonValue getValue(const std::string& key) const;
-        JsonValue getValue(const size_t& index) const;
+        JsonValue getValue(size_t index) const;
 
         JsonValue operator[](const std::string& key) const;
-        JsonValue operator[](const size_t& index) const;
+        JsonValue operator[](size_t index) const;
 
         bool operator==(const JsonValue& other) const;
         bool operator!=(const JsonValue& other) const;
 
-        JsonValue& operator=(const bool& value);
-        JsonValue& operator=(const int& value);
-        JsonValue& operator=(const double& value);
+        JsonValue& operator=(bool value);
+        JsonValue& operator=(int value);
+        JsonValue& operator=(double value);
         JsonValue& operator=(const char* value);
         JsonValue& operator=(const std::string& value);
         JsonValue& operator=(const JsonObject& value);

@@ -41,11 +41,11 @@ struct SubString {
     const char* data;
     const size_t length;
 
-    char operator[](const size_t& index) const {
+    char operator[](size_t index) const {
         return data[index];
     }
 
-    SubString subView(const size_t& from, const size_t& end = size_t(-1)) const {
+    SubString subView(size_t from, size_t end = size_t(-1)) const {
         if (end == size_t(-1)) {
             return { data + from, length - from };
         }
@@ -72,7 +72,7 @@ inline std::string subStrToString(const SubString& subStr) {
     return std::string(subStr.data, subStr.length);
 }
 
-constexpr inline bool isJsonWhitespace(const char& c) noexcept {
+constexpr inline bool isJsonWhitespace(char c) noexcept {
     // Json only acepts those as valid ignorable whitespaces.
     // isspace method allows further things that are invalid in json.
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -131,7 +131,7 @@ std::string escapeString(const SubString& input) {
     return result.str();
 }
 
-size_t findNextNonWSCharacter(const SubString& string, const size_t& off = 0) {
+size_t findNextNonWSCharacter(const SubString& string, size_t off = 0) {
     for (size_t i = off; i < string.length; i++) {
         if (!isJsonWhitespace(string[i])) {
             return i;
@@ -140,7 +140,7 @@ size_t findNextNonWSCharacter(const SubString& string, const size_t& off = 0) {
     return std::string::npos;
 }
 
-size_t findEndOfJsonString(const SubString& jsonString, const size_t& stringStart = 0) {
+size_t findEndOfJsonString(const SubString& jsonString, size_t stringStart = 0) {
     // Expects index 0 to hold string start quotes
     for (size_t i = stringStart + 1; i < jsonString.length; i++) {
         // If its not an escaped quote set it as delimiter
@@ -165,7 +165,7 @@ bool startsWith(const SubString& json, const std::string& identifier) {
     return !mismatch;
 }
 
-ValueMetaInfo findNextJsonValue(const SubString& json, const size_t& from = 0) {
+ValueMetaInfo findNextJsonValue(const SubString& json, size_t from = 0) {
     size_t valueStart = findNextNonWSCharacter(json, from);
     if (valueStart == std::string::npos)
         throw Json::JsonMalformedException("Did not find start of json value");
@@ -280,7 +280,7 @@ ValueMetaInfo findNextJsonValue(const SubString& json, const size_t& from = 0) {
     throw Json::JsonMalformedException("Unable to determine json type");
 }
 
-KeyMetaInfo findNextKey(const SubString& json, const size_t& from = 0) {
+KeyMetaInfo findNextKey(const SubString& json, size_t from = 0) {
     size_t beginKey = findNextNonWSCharacter(json, from);
     if (json[beginKey] != JSONSTRING_DELIMITER)
         throw Json::JsonMalformedException("Unexpected character when searching for key in json object");
@@ -295,7 +295,7 @@ KeyMetaInfo findNextKey(const SubString& json, const size_t& from = 0) {
     return { beginKey, endKey };
 }
 
-ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, const size_t& from = 0) {
+ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, size_t from = 0) {
     ValueMetaInfo valueInfo = findNextJsonValue(jsonArray, from);
     size_t commaPos = findNextNonWSCharacter(jsonArray, valueInfo.endIndex + 1);
     if (commaPos == std::string::npos)
@@ -313,7 +313,7 @@ ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, const siz
     return { { value } , commaPos };
 }
 
-ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, const size_t& from = 0) {
+ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, size_t from = 0) {
     KeyMetaInfo keyInfo = findNextKey(json, from);
     size_t colonPos = findNextNonWSCharacter(json, keyInfo.endIndex + 1);
     if (colonPos == std::string::npos || json[colonPos] != JSONKEYVALUE_SEPERATOR)
@@ -526,7 +526,7 @@ Json::JsonValue Json::JsonValue::getValue(const std::string& key) const {
     return it->second;
 }
 
-Json::JsonValue Json::JsonValue::getValue(const size_t& index) const {
+Json::JsonValue Json::JsonValue::getValue(size_t index) const {
     if (m_type != Json::JsonType::Array)
         throw Json::JsonTypeException("Accessing index in non-array type");
     if (index >= a_value->size())
@@ -539,7 +539,7 @@ Json::JsonValue Json::JsonValue::operator[](const std::string& key) const {
     return getValue(key);
 }
 
-Json::JsonValue Json::JsonValue::operator[](const size_t& index) const {
+Json::JsonValue Json::JsonValue::operator[](size_t index) const {
     return getValue(index);
 }
 
@@ -563,21 +563,21 @@ bool Json::JsonValue::operator!=(const Json::JsonValue &other) const {
     return !(*this == other);
 }
 
-Json::JsonValue& Json::JsonValue::operator=(const bool& value) {
+Json::JsonValue& Json::JsonValue::operator=(bool value) {
     this->~JsonValue();
     b_value = value;
     m_type = Json::JsonType::Bool;
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(const int& value) {
+Json::JsonValue& Json::JsonValue::operator=(int value) {
     this->~JsonValue();
     i_value = value;
     m_type = Json::JsonType::Integer;
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(const double& value) {
+Json::JsonValue& Json::JsonValue::operator=(double value) {
     this->~JsonValue();
     d_value = value;
     m_type = Json::JsonType::Double;
