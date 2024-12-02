@@ -99,7 +99,7 @@ std::string parseJsonStringValue(const SubString& input) {
                 }
                 i++;  // Skip the escape character
             } else {
-                throw Json::JsonMalformedException("Trailing escape character at end of string");
+                throw Json::JsonMalformedException("Standalone escape character in json string");
             }
         } else {
             // Check for raw invalid characters, including control chars [0-31] and special chars
@@ -327,7 +327,7 @@ ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, size_t from
 
     char nextChar = json[commaPos];
     if (nextChar != JSONVALUE_DELIMITER && nextChar != JSONOBJECT_ENDDELIMITER)
-        throw Json::JsonMalformedException("Unexpected character when searching for separator or closure in json array");
+        throw Json::JsonMalformedException("Unexpected character when searching for separator or closure in json object");
 
     if (nextChar == JSONOBJECT_ENDDELIMITER) {
         commaPos = std::string::npos; // Signal for calling function that end of object is reached
@@ -481,37 +481,37 @@ bool Json::JsonValue::isEmpty() const {
 
 bool Json::JsonValue::toBool() const {
     if (m_type != Json::JsonType::Bool)
-        throw Json::JsonTypeException("JsonValue was casted to BOOL but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ BOOL because underlying type is " + jsonTypeToString(m_type));
     return b_value;
 }
 
 int Json::JsonValue::toInt() const {
     if (m_type != Json::JsonType::Integer)
-        throw Json::JsonTypeException("JsonValue was casted to INTEGER but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ INTEGER because underlying type is " + jsonTypeToString(m_type));
     return i_value;
 }
 
 double Json::JsonValue::toDouble() const {
     if (m_type != Json::JsonType::Double)
-        throw Json::JsonTypeException("JsonValue was casted to DOUBLE but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ DOUBLE because the underlying type is " + jsonTypeToString(m_type));
     return d_value;
 }
 
 std::string Json::JsonValue::toString() const {
     if (m_type != Json::JsonType::String)
-        throw Json::JsonTypeException("JsonValue was casted to STRING but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ STRING because the underlying type is " + jsonTypeToString(m_type));
     return *s_value;
 }
 
 Json::JsonObject Json::JsonValue::toObject() const {
     if (m_type != Json::JsonType::Object)
-        throw Json::JsonTypeException("JsonValue was casted to OBJECT but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ OBJECT because the underlying type is " + jsonTypeToString(m_type));
     return *o_value;
 }
 
 Json::JsonArray Json::JsonValue::toArray() const {
     if (m_type != Json::JsonType::Array)
-        throw Json::JsonTypeException("JsonValue was casted to ARRAY but the underlying type was " + jsonTypeToString(m_type));
+        throw Json::JsonTypeException("Cannot cast to C++ ARRAY because the underlying type is " + jsonTypeToString(m_type));
     return *a_value;
 }
 
@@ -530,7 +530,7 @@ Json::JsonValue Json::JsonValue::getValue(size_t index) const {
     if (m_type != Json::JsonType::Array)
         throw Json::JsonTypeException("Accessing index in non-array type");
     if (index >= a_value->size())
-        throw std::out_of_range("Index out of bounds");
+        throw std::out_of_range("Index out of bounds for this JsonArray");
 
     return (*a_value)[index];
 }
