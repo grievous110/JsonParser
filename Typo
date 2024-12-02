@@ -75,6 +75,6 @@ try {
 * `boolean` -> `bool`
 * `integer` -> `int`
 * `floating-point` -> `double`
-* `string` -> `std::nullptr_t`
+* `string` -> `std::string`
 * `array` -> `Json::JsonArray`
 * `object` -> `Json::JsonObject`
