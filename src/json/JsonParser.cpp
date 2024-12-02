@@ -515,31 +515,30 @@ Json::JsonArray Json::JsonValue::toArray() const {
     return *a_value;
 }
 
-Json::JsonValue Json::JsonValue::getValue(const std::string& key) const {
+Json::JsonValue& Json::JsonValue::getValue(const std::string& key) {
     if (m_type != Json::JsonType::Object)
         throw Json::JsonTypeException("Accessing key in non-object type");
 
     auto it = o_value->find(key);
-    if (it == o_value->end())
-        throw std::out_of_range("Key not found in JsonObject");
-
+    if (it == o_value->end()) {
+        // Insert default value
+        auto result = o_value->emplace(key, JsonValue()); 
+        it = result.first;
+    }
     return it->second;
 }
 
-Json::JsonValue Json::JsonValue::getValue(size_t index) const {
+Json::JsonValue& Json::JsonValue::getValue(size_t index) {
     if (m_type != Json::JsonType::Array)
         throw Json::JsonTypeException("Accessing index in non-array type");
-    if (index >= a_value->size())
-        throw std::out_of_range("Index out of bounds for this JsonArray");
-
     return (*a_value)[index];
 }
 
-Json::JsonValue Json::JsonValue::operator[](const std::string& key) const {
+Json::JsonValue& Json::JsonValue::operator[](const std::string& key) {
     return getValue(key);
 }
 
-Json::JsonValue Json::JsonValue::operator[](size_t index) const {
+Json::JsonValue& Json::JsonValue::operator[](size_t index) {
     return getValue(index);
 }
 

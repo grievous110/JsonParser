@@ -88,11 +88,11 @@ namespace Json {
         JsonObject toObject() const;
         JsonArray toArray() const;
 
-        JsonValue getValue(const std::string& key) const;
-        JsonValue getValue(size_t index) const;
+        JsonValue& getValue(const std::string& key);
+        JsonValue& getValue(size_t index);
 
-        JsonValue operator[](const std::string& key) const;
-        JsonValue operator[](size_t index) const;
+        JsonValue& operator[](const std::string& key);
+        JsonValue& operator[](size_t index);
 
         bool operator==(const JsonValue& other) const;
         bool operator!=(const JsonValue& other) const;

@@ -101,38 +101,47 @@ TEST(JsonValueTests, OperatorAccessObject) {
     JsonObject obj = {{"key", 42}};
     JsonValue value(obj);
 
-    EXPECT_NO_THROW(value["key"]); // Access existing key
-    EXPECT_EQ(value["key"].toInt(), 42); // Check the value
-    EXPECT_THROW(value["nonexistent"], std::out_of_range); // Access nonexistent key
+    EXPECT_NO_THROW(value["key"]);
+    EXPECT_EQ(value["key"].toInt(), 42);
+    EXPECT_THROW(value["nonexistent"], std::out_of_range);
 }
 
 TEST(JsonValueTests, OperatorAccessArray) {
     JsonArray arr = {1, 2, 3};
     JsonValue value(arr);
 
-    EXPECT_NO_THROW(value[0]); // Access valid index
-    EXPECT_EQ(value[0].toInt(), 1); // Check the value
-    EXPECT_NO_THROW(value[2]); // Access another valid index
-    EXPECT_EQ(value[2].toInt(), 3); // Check the value
-    EXPECT_THROW(value[10], std::out_of_range); // Access out-of-bounds index
+    EXPECT_NO_THROW(value[0]);
+    EXPECT_EQ(value[0].toInt(), 1);
+    EXPECT_NO_THROW(value[2]);
+    EXPECT_EQ(value[2].toInt(), 3);
+    EXPECT_THROW(value[10], std::out_of_range);
 }
 
-TEST(JsonValueTests, GetValueObject) {
+TEST(JsonValueTests, OperatorReassignObject) {
     JsonObject obj = {{"key", 42}};
     JsonValue value(obj);
 
-    EXPECT_NO_THROW(value.getValue("key"));
-    EXPECT_EQ(value.getValue("key").toInt(), 42);
-    EXPECT_THROW(value.getValue("nonexistent"), std::out_of_range);
+    EXPECT_NO_THROW(value["key"] = 100);
+    EXPECT_EQ(value["key"].toInt(), 100);
+
+    EXPECT_NO_THROW(value["new_key"] = 200);
+    EXPECT_EQ(value["new_key"].toInt(), 200);
+
+    // Ensure that the original value is still reassigned correctly
+    EXPECT_EQ(value["key"].toInt(), 100);
 }
 
-TEST(JsonValueTests, GetValueArray) {
+TEST(JsonValueTests, OperatorReassignArray) {
     JsonArray arr = {1, 2, 3};
     JsonValue value(arr);
 
-    EXPECT_NO_THROW(value.getValue(0));
-    EXPECT_EQ(value.getValue(0).toInt(), 1);
-    EXPECT_THROW(value.getValue(10), std::out_of_range);
+    EXPECT_NO_THROW(value[0] = 100);
+    EXPECT_EQ(value[0].toInt(), 100);
+
+    EXPECT_NO_THROW(value[2] = 300);
+    EXPECT_EQ(value[2].toInt(), 300);
+
+    EXPECT_EQ(value[1].toInt(), 2); // Ensure index 1 was not modified
 }
 
 TEST(JsonValueTests, TypeConversionExceptions) {
