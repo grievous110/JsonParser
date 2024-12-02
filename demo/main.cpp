@@ -37,8 +37,8 @@ int main() {
         std::cout << "Converted to native Double Value: " << doubleVal.toDouble() << std::endl;
         std::cout << "Converted to native String Value: " << stringVal.toString() << std::endl;
 
-        std::cout << "Object Value (key1): " << objVal.getValue("key1") << std::endl;
-        std::cout << "Array Value (index 1): " << arrVal.getValue(1) << std::endl;
+        std::cout << "Object Value (key1): " << objVal["key1"] << std::endl;
+        std::cout << "Array Value (index 1): " << arrVal[1] << std::endl;
 
         // Serialization
         std::string jsonString = toJsonString(objVal);
@@ -46,7 +46,7 @@ int main() {
 
         // Deserialization
         JsonValue parsedJson = parseJson(jsonString);
-        std::cout << "Parsed JSON Object Value (key1): " << parsedJson.getValue("key1") << std::endl;
+        std::cout << "Parsed JSON Object Value (key1): " << parsedJson["key1"] << std::endl;
 
         // Checking types
         std::cout << "Type of objVal: " << jsonTypeToString(objVal.type()) << std::endl;
