@@ -55,7 +55,7 @@ struct SubString {
             return { nullptr, 0 };
         }
 
-        if (end >= length)
+        if (end >= length || from < 0 || end < 0)
             throw std::out_of_range("View bounds out of range");
 
         return { data + from, end - from + 1 };
