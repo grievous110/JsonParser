@@ -103,7 +103,7 @@ TEST(JsonValueTests, OperatorAccessObject) {
 
     EXPECT_NO_THROW(value["key"]);
     EXPECT_EQ(value["key"].toInt(), 42);
-    EXPECT_THROW(value["nonexistent"], std::out_of_range);
+    EXPECT_TRUE(value["nonexistent"].isNull());
 }
 
 TEST(JsonValueTests, OperatorAccessArray) {
