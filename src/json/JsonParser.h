@@ -67,10 +67,7 @@ namespace Json {
 		JsonValue(std::nullptr_t) noexcept : m_type(JsonType::Null) {}
 
 		JsonValue(const JsonValue& value); // Copy constructor
-		~JsonValue();
-		
-		JsonValue getValue(const std::string& key) const;
-		JsonValue getValue(const size_t& index) const;
+		~JsonValue();		
 
 		inline JsonType type() const { return m_type; }
 
@@ -90,6 +87,12 @@ namespace Json {
 		std::string toString() const;
 		JsonObject toObject() const;
 		JsonArray toArray() const;
+
+		JsonValue getValue(const std::string& key) const;
+		JsonValue getValue(const size_t& index) const;
+
+		JsonValue operator[](const std::string& key) const;
+		JsonValue operator[](const size_t& index) const;
 
 		bool operator==(const JsonValue& other) const;
 		bool operator!=(const JsonValue& other) const;
