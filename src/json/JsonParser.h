@@ -110,6 +110,8 @@ namespace Json {
         friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
     };
 
+    std::ostream& operator<<(std::ostream& os, const JsonValue& value);
+
     std::string toJsonString(const JsonValue& object);
     JsonValue parseJson(const std::string& json);
 
