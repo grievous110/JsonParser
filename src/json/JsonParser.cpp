@@ -474,62 +474,55 @@ Json::JsonValue::~JsonValue() {
 
 
 bool Json::JsonValue::isEmpty() const {
-    if (m_type == Json::JsonType::Object) return o_value->empty();
-    if (m_type == Json::JsonType::Array) return a_value->empty();
+    if (isObject()) return o_value->empty();
+    if (isArray()) return a_value->empty();
     throw Json::JsonTypeException("Cannot check emptiness for non-object/array types");
 }
 
 bool Json::JsonValue::toBool() const {
-    if (m_type != Json::JsonType::Bool)
+    if (!isBool())
         throw Json::JsonTypeException("Cannot cast to C++ BOOL because underlying type is " + jsonTypeToString(m_type));
     return b_value;
 }
 
 int Json::JsonValue::toInt() const {
-    if (m_type != Json::JsonType::Integer)
+    if (!isInt())
         throw Json::JsonTypeException("Cannot cast to C++ INTEGER because underlying type is " + jsonTypeToString(m_type));
     return i_value;
 }
 
 double Json::JsonValue::toDouble() const {
-    if (m_type != Json::JsonType::Double)
+    if (!isDouble())
         throw Json::JsonTypeException("Cannot cast to C++ DOUBLE because the underlying type is " + jsonTypeToString(m_type));
     return d_value;
 }
 
 std::string Json::JsonValue::toString() const {
-    if (m_type != Json::JsonType::String)
+    if (!isString())
         throw Json::JsonTypeException("Cannot cast to C++ STRING because the underlying type is " + jsonTypeToString(m_type));
     return *s_value;
 }
 
 Json::JsonObject Json::JsonValue::toObject() const {
-    if (m_type != Json::JsonType::Object)
+    if (!isObject())
         throw Json::JsonTypeException("Cannot cast to C++ OBJECT because the underlying type is " + jsonTypeToString(m_type));
     return *o_value;
 }
 
 Json::JsonArray Json::JsonValue::toArray() const {
-    if (m_type != Json::JsonType::Array)
+    if (!isArray())
         throw Json::JsonTypeException("Cannot cast to C++ ARRAY because the underlying type is " + jsonTypeToString(m_type));
     return *a_value;
 }
 
 Json::JsonValue& Json::JsonValue::getValue(const std::string& key) {
-    if (m_type != Json::JsonType::Object)
+    if (!isObject())
         throw Json::JsonTypeException("Accessing key in non-object type");
-
-    auto it = o_value->find(key);
-    if (it == o_value->end()) {
-        // Insert default value
-        auto result = o_value->emplace(key, JsonValue()); 
-        it = result.first;
-    }
-    return it->second;
+    return (*o_value)[key];
 }
 
 Json::JsonValue& Json::JsonValue::getValue(size_t index) {
-    if (m_type != Json::JsonType::Array)
+    if (!isArray())
         throw Json::JsonTypeException("Accessing index in non-array type");
     if (index >= a_value->size())
         throw std::out_of_range("Index out of range in JsonArray");
