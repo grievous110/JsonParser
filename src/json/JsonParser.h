@@ -55,38 +55,44 @@ namespace Json {
 
         JsonType m_type;
 
+        void destroy();
+
     public:
         JsonValue() noexcept : m_type(JsonType::Null) {}
-        JsonValue(bool value) : b_value(value), m_type(JsonType::Bool) {}
-        JsonValue(int value) : i_value(value), m_type(JsonType::Integer) {}
-        JsonValue(double value) : d_value(value), m_type(JsonType::Double) {}
+        JsonValue(bool value) noexcept : b_value(value), m_type(JsonType::Bool) {}
+        JsonValue(int value) noexcept : i_value(value), m_type(JsonType::Integer) {}
+        JsonValue(double value) noexcept : d_value(value), m_type(JsonType::Double) {}
         JsonValue(const char* value) : s_value(new std::string(value)), m_type(JsonType::String) {}
         JsonValue(const std::string& value) : s_value(new std::string(value)), m_type(JsonType::String) {}
         JsonValue(const JsonObject& value) : o_value(new JsonObject(value)), m_type(JsonType::Object) {}
         JsonValue(const JsonArray& value) : a_value(new JsonArray(value)), m_type(JsonType::Array) {}
+        JsonValue(std::string&& value) : s_value(new std::string(std::move(value))), m_type(JsonType::String) {}
+        JsonValue(JsonObject&& value) : o_value(new JsonObject(std::move(value))), m_type(JsonType::Object) {}
+        JsonValue(JsonArray&& value) : a_value(new JsonArray(std::move(value))), m_type(JsonType::Array) {}
         JsonValue(std::nullptr_t) noexcept : m_type(JsonType::Null) {}
 
-        JsonValue(const JsonValue& value); // Copy constructor
-        ~JsonValue();		
+        JsonValue(const JsonValue& other); // Copy constructor
+        JsonValue(JsonValue&& other) noexcept; // Move constructor
+        ~JsonValue() noexcept { destroy(); }
 
         inline JsonType type() const { return m_type; }
 
-        inline bool isBool() const { return m_type == JsonType::Bool; }
-        inline bool isInt() const { return m_type == JsonType::Integer; }
-        inline bool isDouble() const { return m_type == JsonType::Double; }
-        inline bool isString() const { return m_type == JsonType::String; }
-        inline bool isObject() const { return m_type == JsonType::Object; }
-        inline bool isArray() const { return m_type == JsonType::Array; }
-        inline bool isNull() const { return m_type == JsonType::Null; }
+        inline bool isBool() const noexcept { return m_type == JsonType::Bool; }
+        inline bool isInt() const noexcept { return m_type == JsonType::Integer; }
+        inline bool isDouble() const noexcept { return m_type == JsonType::Double; }
+        inline bool isString() const noexcept { return m_type == JsonType::String; }
+        inline bool isObject() const noexcept { return m_type == JsonType::Object; }
+        inline bool isArray() const noexcept { return m_type == JsonType::Array; }
+        inline bool isNull() const noexcept { return m_type == JsonType::Null; }
         bool isEmpty() const;
 
         // Converter methods might throw JsonTypeException when casting to the wrong type
         bool toBool() const;
         int toInt() const;
         double toDouble() const;
-        std::string toString() const;
-        JsonObject toObject() const;
-        JsonArray toArray() const;
+        const std::string& toString() const;
+        const JsonObject& toObject() const;
+        const JsonArray& toArray() const;
 
         JsonValue& getValue(const std::string& key);
         JsonValue& getValue(size_t index);
@@ -97,15 +103,19 @@ namespace Json {
         bool operator==(const JsonValue& other) const;
         bool operator!=(const JsonValue& other) const;
 
-        JsonValue& operator=(bool value);
-        JsonValue& operator=(int value);
-        JsonValue& operator=(double value);
+        JsonValue& operator=(bool value) noexcept;
+        JsonValue& operator=(int value) noexcept;
+        JsonValue& operator=(double value) noexcept;
         JsonValue& operator=(const char* value);
         JsonValue& operator=(const std::string& value);
         JsonValue& operator=(const JsonObject& value);
         JsonValue& operator=(const JsonArray& value);
-        JsonValue& operator=(const JsonValue& value);
-        JsonValue& operator=(std::nullptr_t);
+        JsonValue& operator=(const JsonValue& other);
+        JsonValue& operator=(std::string&& value);
+        JsonValue& operator=(JsonObject&& value);
+        JsonValue& operator=(JsonArray&& value);
+        JsonValue& operator=(JsonValue&& other) noexcept;
+        JsonValue& operator=(std::nullptr_t) noexcept;
 
         friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
     };
@@ -115,7 +125,7 @@ namespace Json {
     std::string toJsonString(const JsonValue& object);
     JsonValue parseJson(const std::string& json);
 
-    inline std::string jsonTypeToString(const JsonType& type) {
+    inline std::string jsonTypeToString(JsonType type) {
         switch (type) {
             case JsonType::Bool: return "Bool";
             case JsonType::Integer: return "Integer";

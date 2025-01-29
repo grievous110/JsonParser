@@ -450,6 +450,16 @@ Json::JsonValue internalParseJson(const SubString& json) {
     }
 }
 
+void Json::JsonValue::destroy() {
+    switch (m_type) { // Manual memory management for special cases
+        case Json::JsonType::String: delete s_value; break;
+        case Json::JsonType::Object: delete o_value; break;
+        case Json::JsonType::Array: delete a_value; break;
+        default: break;
+    }
+    m_type = Json::JsonType::Null;
+}
+
 Json::JsonValue::JsonValue(const Json::JsonValue& other) {
     m_type = other.m_type;
     switch (m_type) {
@@ -463,15 +473,20 @@ Json::JsonValue::JsonValue(const Json::JsonValue& other) {
     }
 }
 
-Json::JsonValue::~JsonValue() {
-    switch (m_type) { // Manual memory management for special cases
-        case Json::JsonType::String: delete s_value; break;
-        case Json::JsonType::Object: delete o_value; break;
-        case Json::JsonType::Array: delete a_value; break;
+Json::JsonValue::JsonValue(Json::JsonValue&& other) noexcept {
+    m_type = other.m_type;
+    switch (m_type) {
+        case Json::JsonType::Bool: b_value = other.b_value; break;
+        case Json::JsonType::Integer: i_value = other.i_value; break;
+        case Json::JsonType::Double: d_value = other.d_value; break;
+        case Json::JsonType::String: s_value = other.s_value; break;
+        case Json::JsonType::Object: o_value = other.o_value; break;
+        case Json::JsonType::Array: a_value = other.a_value; break;
         default: break;
     }
-}
 
+    other.m_type = Json::JsonType::Null;
+}
 
 bool Json::JsonValue::isEmpty() const {
     if (isObject()) return o_value->empty();
@@ -497,19 +512,19 @@ double Json::JsonValue::toDouble() const {
     return d_value;
 }
 
-std::string Json::JsonValue::toString() const {
+const std::string& Json::JsonValue::toString() const {
     if (!isString())
         throw Json::JsonTypeException("Cannot cast to C++ STRING because the underlying type is " + jsonTypeToString(m_type));
     return *s_value;
 }
 
-Json::JsonObject Json::JsonValue::toObject() const {
+const Json::JsonObject& Json::JsonValue::toObject() const {
     if (!isObject())
         throw Json::JsonTypeException("Cannot cast to C++ OBJECT because the underlying type is " + jsonTypeToString(m_type));
     return *o_value;
 }
 
-Json::JsonArray Json::JsonValue::toArray() const {
+const Json::JsonArray& Json::JsonValue::toArray() const {
     if (!isArray())
         throw Json::JsonTypeException("Cannot cast to C++ ARRAY because the underlying type is " + jsonTypeToString(m_type));
     return *a_value;
@@ -557,65 +572,118 @@ bool Json::JsonValue::operator!=(const Json::JsonValue &other) const {
     return !(*this == other);
 }
 
-Json::JsonValue& Json::JsonValue::operator=(bool value) {
-    this->~JsonValue();
+Json::JsonValue& Json::JsonValue::operator=(bool value) noexcept {
+    destroy();
     b_value = value;
     m_type = Json::JsonType::Bool;
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(int value) {
-    this->~JsonValue();
+Json::JsonValue& Json::JsonValue::operator=(int value) noexcept {
+    destroy();
     i_value = value;
     m_type = Json::JsonType::Integer;
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(double value) {
-    this->~JsonValue();
+Json::JsonValue& Json::JsonValue::operator=(double value) noexcept {
+    destroy();
     d_value = value;
     m_type = Json::JsonType::Double;
     return *this;
 }
 
 Json::JsonValue& Json::JsonValue::operator=(const char* value) {
-    this->~JsonValue();
+    destroy();
     s_value = new std::string(value);
     m_type = Json::JsonType::String;
     return *this;
 }
 
 Json::JsonValue& Json::JsonValue::operator=(const std::string& value) {
-    this->~JsonValue();
+    destroy();
     s_value = new std::string(value);
     m_type = Json::JsonType::String;
     return *this;
 }
 
 Json::JsonValue& Json::JsonValue::operator=(const Json::JsonObject& value) {
-    this->~JsonValue();
+    destroy();
     o_value = new Json::JsonObject(value);
     m_type = Json::JsonType::Object;
     return *this;
 }
 
 Json::JsonValue& Json::JsonValue::operator=(const Json::JsonArray& value) {
-    this->~JsonValue();
+    destroy();
     a_value = new Json::JsonArray(value);
     m_type = Json::JsonType::Array;
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(const Json::JsonValue& value) {
-    if (this != &value) {
-        this->~JsonValue();
-        new (this) Json::JsonValue(value);  // "placement new" (Replaces memory of object by copying over)
+Json::JsonValue& Json::JsonValue::operator=(const Json::JsonValue& other) {
+    if (this != &other) {
+        destroy();
+        new (this) Json::JsonValue(other);  // "placement new" (Replaces memory of object by copying over)
     }
     return *this;
 }
 
-Json::JsonValue& Json::JsonValue::operator=(std::nullptr_t) {
-    this->~JsonValue();
+Json::JsonValue& Json::JsonValue::operator=(std::string&& value) {
+    if (isString()) {
+        *s_value = std::move(value);
+    } else {
+        destroy();
+        s_value = new std::string(std::move(value));
+        m_type = JsonType::String;
+    }
+    return *this;
+}
+
+Json::JsonValue& Json::JsonValue::operator=(Json::JsonObject&& value) {
+    if (isObject()) {
+        *o_value = std::move(value);
+    } else {
+        destroy();
+        o_value = new JsonObject(std::move(value));
+        m_type = JsonType::Object;
+    }
+    return *this;
+}
+
+Json::JsonValue& Json::JsonValue::operator=(Json::JsonArray&& value) {
+    if (isArray()) {
+        *a_value = std::move(value);
+    } else {
+        destroy();
+        a_value = new JsonArray(std::move(value));
+        m_type = JsonType::Array;
+    }
+    return *this;
+}
+
+Json::JsonValue& Json::JsonValue::operator=(Json::JsonValue&& other) noexcept {
+    if (this == &other) return *this;
+
+    destroy();
+
+    switch (other.m_type) {
+        case JsonType::Bool: b_value = other.b_value; break;
+        case JsonType::Integer: i_value = other.i_value; break;
+        case JsonType::Double: d_value = other.d_value; break;
+        case JsonType::String: s_value = other.s_value; break;
+        case JsonType::Object: o_value = other.o_value; break;
+        case JsonType::Array: a_value = other.a_value; break;
+        default: break;
+    }
+
+    m_type = other.m_type;
+    other.m_type = Json::JsonType::Null;
+    return *this;
+}
+
+Json::JsonValue& Json::JsonValue::operator=(std::nullptr_t) noexcept {
+    destroy();
     m_type = Json::JsonType::Null;
     return *this;
 }
