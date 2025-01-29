@@ -77,13 +77,13 @@ TEST(JsonValueTests, AssignmentOperators) {
     JsonObject obj = {{"key", true}};
     value = obj;
     EXPECT_TRUE(value.isObject());
-    EXPECT_EQ(value.toObject()["key"].toBool(), true);
+    EXPECT_EQ(value["key"].toBool(), true);
 
     JsonArray arr = {1, "two"};
     value = arr;
     EXPECT_TRUE(value.isArray());
-    EXPECT_EQ(value.toArray()[0].toInt(), 1);
-    EXPECT_EQ(value.toArray()[1].toString(), "two");
+    EXPECT_EQ(value[0].toInt(), 1);
+    EXPECT_EQ(value[1].toString(), "two");
 
     value = nullptr;
     EXPECT_TRUE(value.isNull());
