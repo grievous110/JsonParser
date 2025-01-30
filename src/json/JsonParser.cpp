@@ -12,9 +12,9 @@
 #define JSONARRAY_STARTDELIMITER '['
 #define JSONARRAY_ENDDELIMITER ']'
 
-constexpr size_t nullLiteralEndIndex = sizeof(JSON_NULL_LITERAL) - 2; // Exclude \0
-constexpr size_t trueLiteralEndIndex = sizeof(JSON_BOOLTRUE_LITERAL) - 2;
-constexpr size_t falseLiteralEndIndex = sizeof(JSON_BOOLFALSE_LITERAL) - 2;
+static constexpr size_t nullLiteralEndIndex = sizeof(JSON_NULL_LITERAL) - 2; // Exclude \0
+static constexpr size_t trueLiteralEndIndex = sizeof(JSON_BOOLTRUE_LITERAL) - 2;
+static constexpr size_t falseLiteralEndIndex = sizeof(JSON_BOOLFALSE_LITERAL) - 2;
 
 struct ObjectElementResult {
     const Json::JsonObjectEntry entry;
@@ -66,19 +66,19 @@ struct SubString {
     const char* end() const { return data + length; }
 };
 
-Json::JsonValue internalParseJson(const SubString& json);
+static Json::JsonValue internalParseJson(const SubString& json);
 
-inline std::string subStrToString(const SubString& subStr) {
+static inline std::string subStrToString(const SubString& subStr) {
     return std::string(subStr.data, subStr.length);
 }
 
-constexpr inline bool isJsonWhitespace(char c) noexcept {
+static constexpr bool isJsonWhitespace(char c) noexcept {
     // Json only acepts those as valid ignorable whitespaces.
     // isspace method allows further things that are invalid in json.
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-std::string parseJsonStringValue(const SubString& input) {
+static std::string parseJsonStringValue(const SubString& input) {
     std::stringstream result;
     size_t i = 0;
     while (i < input.length) {
@@ -113,7 +113,7 @@ std::string parseJsonStringValue(const SubString& input) {
     return result.str();
 }
 
-std::string escapeString(const SubString& input) {
+static std::string escapeString(const SubString& input) {
     std::ostringstream result;
     for (char c : input) {
         switch (c) {
@@ -131,7 +131,7 @@ std::string escapeString(const SubString& input) {
     return result.str();
 }
 
-size_t findNextNonWSCharacter(const SubString& string, size_t off = 0) {
+static size_t findNextNonWSCharacter(const SubString& string, size_t off = 0) {
     for (size_t i = off; i < string.length; i++) {
         if (!isJsonWhitespace(string[i])) {
             return i;
@@ -140,7 +140,7 @@ size_t findNextNonWSCharacter(const SubString& string, size_t off = 0) {
     return std::string::npos;
 }
 
-size_t findEndOfJsonString(const SubString& jsonString, size_t stringStart = 0) {
+static size_t findEndOfJsonString(const SubString& jsonString, size_t stringStart = 0) {
     // Expects index 0 to hold string start quotes
     for (size_t i = stringStart + 1; i < jsonString.length; i++) {
         // If its not an escaped quote set it as delimiter
@@ -151,7 +151,7 @@ size_t findEndOfJsonString(const SubString& jsonString, size_t stringStart = 0) 
     return std::string::npos;
 }
 
-bool startsWith(const SubString& json, const std::string& identifier) {
+static bool startsWith(const SubString& json, const std::string& identifier) {
     if (json.length < identifier.length()) {
         return false;
     }
@@ -165,7 +165,7 @@ bool startsWith(const SubString& json, const std::string& identifier) {
     return !mismatch;
 }
 
-ValueMetaInfo findNextJsonValue(const SubString& json, size_t from = 0) {
+static ValueMetaInfo findNextJsonValue(const SubString& json, size_t from = 0) {
     size_t valueStart = findNextNonWSCharacter(json, from);
     if (valueStart == std::string::npos)
         throw Json::JsonMalformedException("Did not find start of json value");
@@ -280,7 +280,7 @@ ValueMetaInfo findNextJsonValue(const SubString& json, size_t from = 0) {
     throw Json::JsonMalformedException("Unable to determine json type");
 }
 
-KeyMetaInfo findNextKey(const SubString& json, size_t from = 0) {
+static KeyMetaInfo findNextKey(const SubString& json, size_t from = 0) {
     size_t beginKey = findNextNonWSCharacter(json, from);
     if (json[beginKey] != JSONSTRING_DELIMITER)
         throw Json::JsonMalformedException("Unexpected character when searching for key in json object");
@@ -295,7 +295,7 @@ KeyMetaInfo findNextKey(const SubString& json, size_t from = 0) {
     return { beginKey, endKey };
 }
 
-ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, size_t from = 0) {
+static ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, size_t from = 0) {
     ValueMetaInfo valueInfo = findNextJsonValue(jsonArray, from);
     size_t commaPos = findNextNonWSCharacter(jsonArray, valueInfo.endIndex + 1);
     if (commaPos == std::string::npos)
@@ -313,7 +313,7 @@ ArrayElementResult parseNextJsonArrayValue(const SubString& jsonArray, size_t fr
     return { { value } , commaPos };
 }
 
-ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, size_t from = 0) {
+static ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, size_t from = 0) {
     KeyMetaInfo keyInfo = findNextKey(json, from);
     size_t colonPos = findNextNonWSCharacter(json, keyInfo.endIndex + 1);
     if (colonPos == std::string::npos || json[colonPos] != JSONKEYVALUE_SEPERATOR)
@@ -342,7 +342,7 @@ ObjectElementResult parseNextJsonKeyValuePair(const SubString& json, size_t from
     return { { parseJsonStringValue(keyString), value }, commaPos };
 }
 
-std::string serializeArray(const Json::JsonArray& array) {
+static std::string serializeArray(const Json::JsonArray& array) {
     if (array.empty()) {
         return { JSONARRAY_STARTDELIMITER, JSONARRAY_ENDDELIMITER };
     }
@@ -360,7 +360,7 @@ std::string serializeArray(const Json::JsonArray& array) {
     return stream.str();
 }
 
-std::string serializeObject(const Json::JsonObject& object) {
+static std::string serializeObject(const Json::JsonObject& object) {
     if (object.empty()) {
         return { JSONOBJECT_STARTDELIMITER, JSONOBJECT_ENDDELIMITER };
     }
@@ -378,7 +378,7 @@ std::string serializeObject(const Json::JsonObject& object) {
     return stream.str();
 }
 
-Json::JsonArray deserializeArray(const SubString& jsonArray) {
+static Json::JsonArray deserializeArray(const SubString& jsonArray) {
     // This method assumes the input is already cropped and guranteed to be a json array!
     Json::JsonArray array;
     size_t index = findNextNonWSCharacter(jsonArray, 1);
@@ -400,7 +400,7 @@ Json::JsonArray deserializeArray(const SubString& jsonArray) {
     return array;
 }
 
-Json::JsonObject deserializeObject(const SubString& jsonObj) {
+static Json::JsonObject deserializeObject(const SubString& jsonObj) {
     // This method assumes the input is already cropped and guranteed to be a json object!
     Json::JsonObject obj;
 
@@ -423,7 +423,7 @@ Json::JsonObject deserializeObject(const SubString& jsonObj) {
     return obj;
 }
 
-Json::JsonValue internalParseJson(const SubString& json) {
+static Json::JsonValue internalParseJson(const SubString& json) {
     ValueMetaInfo valueInfo = findNextJsonValue(json);
     SubString valueString = json.subView(valueInfo.startIndex, valueInfo.endIndex);
 
