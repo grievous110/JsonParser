@@ -622,10 +622,21 @@ Json::JsonValue& Json::JsonValue::operator=(const Json::JsonArray& value) {
 }
 
 Json::JsonValue& Json::JsonValue::operator=(const Json::JsonValue& other) {
-    if (this != &other) {
-        destroy();
-        new (this) Json::JsonValue(other);  // "placement new" (Replaces memory of object by copying over)
+    if (this == &other) return *this;
+
+    destroy();
+
+    switch (other.m_type) {
+        case JsonType::Bool: b_value = other.b_value; break;
+        case JsonType::Integer: i_value = other.i_value; break;
+        case JsonType::Double: d_value = other.d_value; break;
+        case Json::JsonType::String: s_value = new std::string(*other.s_value); break;
+        case Json::JsonType::Object: o_value = new Json::JsonObject(*other.o_value); break;
+        case Json::JsonType::Array: a_value = new Json::JsonArray(*other.a_value); break;
+        default: break;
     }
+
+    m_type = other.m_type;
     return *this;
 }
 
