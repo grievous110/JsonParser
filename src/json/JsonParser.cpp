@@ -17,12 +17,12 @@ static constexpr size_t trueLiteralEndIndex = sizeof(JSON_BOOLTRUE_LITERAL) - 2;
 static constexpr size_t falseLiteralEndIndex = sizeof(JSON_BOOLFALSE_LITERAL) - 2;
 
 struct ObjectElementResult {
-    const Json::JsonObjectEntry entry;
+    Json::JsonObjectEntry entry;
     const size_t nextSeparatorPos;
 };
 
 struct ArrayElementResult {
-    const Json::JsonValue value;
+    Json::JsonValue value;
     const size_t nextSeparatorPos;
 };
 
@@ -391,7 +391,7 @@ static Json::JsonArray deserializeArray(const SubString& jsonArray) {
 
     while (index <= end) {
         ArrayElementResult result = parseNextJsonArrayValue(jsonArray, index);
-        array.push_back(result.value);
+        array.push_back(std::move(result.value));
         if (result.nextSeparatorPos == std::string::npos) {
             break;
         }
@@ -414,7 +414,7 @@ static Json::JsonObject deserializeObject(const SubString& jsonObj) {
 
     while (index <= end) {
         ObjectElementResult result = parseNextJsonKeyValuePair(jsonObj, index);
-        obj.insert(result.entry);
+        obj.insert(std::move(result.entry));
         if (result.nextSeparatorPos == std::string::npos) {
             break;
         }
