@@ -56,7 +56,7 @@ try {
 try {
     std::string jsonObj = R"({"key": true})"; // boolean type
     Json::JsonValue value = Json::parseJson(jsonObj);
-    bool bVal = value["key"].toInt(); // Throws JsonTypeException cause underlying type mismatched
+    int iVal = value["key"].toInt(); // Throws JsonTypeException cause underlying type mismatched
 } catch (const JsonTypeException& e) {
     std::cerr << "Failed to access int: " << e.what() << std::endl;
 }
