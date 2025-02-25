@@ -117,12 +117,12 @@ namespace Json {
         JsonValue& operator=(JsonValue&& other) noexcept;
         JsonValue& operator=(std::nullptr_t) noexcept;
 
-        friend std::ostream& operator<<(std::ostream& os, const JsonValue& value);
+        friend std::string toJsonString(const JsonValue& value);
     };
 
     std::ostream& operator<<(std::ostream& os, const JsonValue& value);
 
-    std::string toJsonString(const JsonValue& object);
+    std::string toJsonString(const JsonValue& value);
     JsonValue parseJson(const std::string& json);
 
     inline std::string jsonTypeToString(JsonType type) {

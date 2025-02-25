@@ -79,21 +79,23 @@ static constexpr bool isJsonWhitespace(char c) noexcept {
 }
 
 static std::string parseJsonStringValue(const SubString& input) {
-    std::stringstream result;
+    std::string result;
+    result.reserve(input.length);
+
     size_t i = 0;
     while (i < input.length) {
         if (input[i] == '\\') {
             // Check the escape sequence
             if (i + 1 < input.length) {
                 switch (input[i + 1]) {
-                    case '\"': result << '\"'; break;
-                    case '\\': result << '\\'; break;
-                    case '/':  result << '/'; break;
-                    case 'b':  result << '\b'; break;
-                    case 'f':  result << '\f'; break;
-                    case 'n':  result << '\n'; break;
-                    case 'r':  result << '\r'; break;
-                    case 't':  result << '\t'; break;
+                    case '\"': result += '\"'; break;
+                    case '\\': result += '\\'; break;
+                    case '/':  result += '/'; break;
+                    case 'b':  result += '\b'; break;
+                    case 'f':  result += '\f'; break;
+                    case 'n':  result += '\n'; break;
+                    case 'r':  result += '\r'; break;
+                    case 't':  result += '\t'; break;
                     default:
                         throw Json::JsonMalformedException("Unsupported or invalid escape sequence in json string");
                 }
@@ -106,29 +108,31 @@ static std::string parseJsonStringValue(const SubString& input) {
             if (input[i] < 32 || input[i] == '\"' || input[i] == '\\') {
                 throw Json::JsonMalformedException("Invalid unescaped raw character in json string");
             }
-            result << input[i];
+            result += input[i];
         }
         i++;
     }
-    return result.str();
+    return result;
 }
 
 static std::string escapeString(const SubString& input) {
-    std::ostringstream result;
+    std::string result;
+    result.reserve(input.length);
+
     for (char c : input) {
         switch (c) {
-            case '\"': result << "\\\""; break;
-            case '\\': result << "\\\\"; break;
-            case '/':  result << "\\/"; break;
-            case '\b': result << "\\b"; break;
-            case '\f': result << "\\f"; break;
-            case '\n': result << "\\n"; break;
-            case '\r': result << "\\r"; break;
-            case '\t': result << "\\t"; break;
-            default: result << c;
+            case '\"': result += "\\\""; break;
+            case '\\': result += "\\\\"; break;
+            case '/':  result += "\\/"; break;
+            case '\b': result += "\\b"; break;
+            case '\f': result += "\\f"; break;
+            case '\n': result += "\\n"; break;
+            case '\r': result += "\\r"; break;
+            case '\t': result += "\\t"; break;
+            default: result += c;
         }
     }
-    return result.str();
+    return result;
 }
 
 static size_t findNextNonWSCharacter(const SubString& string, size_t off = 0) {
@@ -346,36 +350,36 @@ static std::string serializeArray(const Json::JsonArray& array) {
     if (array.empty()) {
         return { JSONARRAY_STARTDELIMITER, JSONARRAY_ENDDELIMITER };
     }
-    std::stringstream stream;
-    stream << JSONARRAY_STARTDELIMITER;
+    std::string result;
+    result += JSONARRAY_STARTDELIMITER;
     size_t counter = 0;
     for (const Json::JsonValue& entry : array) {
         counter++;
-        stream << entry;
+        result += Json::toJsonString(entry);
         if (counter < array.size()) {
-            stream << JSONVALUE_DELIMITER;
+            result += JSONVALUE_DELIMITER;
         }
     }
-    stream << JSONARRAY_ENDDELIMITER;
-    return stream.str();
+    result += JSONARRAY_ENDDELIMITER;
+    return result;
 }
 
 static std::string serializeObject(const Json::JsonObject& object) {
     if (object.empty()) {
         return { JSONOBJECT_STARTDELIMITER, JSONOBJECT_ENDDELIMITER };
     }
-    std::stringstream stream;
-    stream << JSONOBJECT_STARTDELIMITER;
+    std::string result;
+    result += JSONOBJECT_STARTDELIMITER;
     size_t counter = 0;
     for (const Json::JsonObjectEntry& entry : object) {
         counter++;
-        stream << JSONSTRING_DELIMITER << escapeString({ entry.first.c_str(), entry.first.length() }) << JSONSTRING_DELIMITER << JSONKEYVALUE_SEPERATOR << entry.second;
+        result += JSONSTRING_DELIMITER + escapeString({ entry.first.c_str(), entry.first.length() }) + JSONSTRING_DELIMITER + JSONKEYVALUE_SEPERATOR + Json::toJsonString(entry.second);
         if (counter < object.size()) {
-            stream << JSONVALUE_DELIMITER;
+            result += JSONVALUE_DELIMITER;
         }
     }
-    stream << JSONOBJECT_ENDDELIMITER;
-    return stream.str();
+    result += JSONOBJECT_ENDDELIMITER;
+    return result;
 }
 
 static Json::JsonArray deserializeArray(const SubString& jsonArray) {
@@ -700,23 +704,26 @@ Json::JsonValue& Json::JsonValue::operator=(std::nullptr_t) noexcept {
 }
 
 std::ostream& Json::operator<<(std::ostream& os, const JsonValue& value) {
-    switch (value.m_type) {
-        case Json::JsonType::Bool: os << (value.b_value ? JSON_BOOLTRUE_LITERAL : JSON_BOOLFALSE_LITERAL); break;
-        case Json::JsonType::Integer: os << value.i_value; break;
-        case Json::JsonType::Double: os << value.d_value; break;
-        case Json::JsonType::String: os << JSONSTRING_DELIMITER << escapeString({ value.s_value->c_str(), value.s_value->length() }) << JSONSTRING_DELIMITER; break;
-        case Json::JsonType::Object: os << serializeObject(*value.o_value); break;
-        case Json::JsonType::Array: os << serializeArray(*value.a_value); break;
-        case Json::JsonType::Null: os << JSON_NULL_LITERAL; break;
-        default: break;
-    }
+    os << Json::toJsonString(value);
     return os;
 }
 
 std::string Json::toJsonString(const Json::JsonValue& value) {
-    std::stringstream stream;
-    stream << value;
-    return stream.str();
+    switch (value.m_type) {
+        case Json::JsonType::Bool: return (value.b_value ? JSON_BOOLTRUE_LITERAL : JSON_BOOLFALSE_LITERAL);
+        case Json::JsonType::Integer: return std::to_string(value.i_value);
+        case Json::JsonType::Double: {
+            // ostringstream formats so that no wasted trailing zeros are appended
+            std::ostringstream ostr;
+            ostr << value.d_value;
+            return ostr.str();
+        }
+        case Json::JsonType::String: return JSONSTRING_DELIMITER + escapeString({ value.s_value->c_str(), value.s_value->length() }) + JSONSTRING_DELIMITER;
+        case Json::JsonType::Object: return serializeObject(*value.o_value);
+        case Json::JsonType::Array: return serializeArray(*value.a_value);
+        case Json::JsonType::Null: return JSON_NULL_LITERAL;
+        default: return "Unknown Json Value";
+    }
 }
 
 Json::JsonValue Json::parseJson(const std::string& json) {
