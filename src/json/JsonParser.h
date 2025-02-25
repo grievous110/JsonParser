@@ -58,7 +58,7 @@ namespace Json {
         void destroy();
 
     public:
-        JsonValue() noexcept : m_type(JsonType::Null) {}
+        JsonValue() noexcept : b_value(false), m_type(JsonType::Null) {}
         JsonValue(bool value) noexcept : b_value(value), m_type(JsonType::Bool) {}
         JsonValue(int value) noexcept : i_value(value), m_type(JsonType::Integer) {}
         JsonValue(double value) noexcept : d_value(value), m_type(JsonType::Double) {}
@@ -69,7 +69,7 @@ namespace Json {
         JsonValue(std::string&& value) : s_value(new std::string(std::move(value))), m_type(JsonType::String) {}
         JsonValue(JsonObject&& value) : o_value(new JsonObject(std::move(value))), m_type(JsonType::Object) {}
         JsonValue(JsonArray&& value) : a_value(new JsonArray(std::move(value))), m_type(JsonType::Array) {}
-        JsonValue(std::nullptr_t) noexcept : m_type(JsonType::Null) {}
+        JsonValue(std::nullptr_t) noexcept : b_value(false), m_type(JsonType::Null) {}
 
         JsonValue(const JsonValue& other); // Copy constructor
         JsonValue(JsonValue&& other) noexcept; // Move constructor
