@@ -7,39 +7,41 @@ project(JsonParser VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Gather all .cpp files in the src directory
-file(GLOB_RECURSE LIB_SOURCES "src/json/*.cpp")
+add_library(JsonParser STATIC src/JsonParser.cpp)
+target_include_directories(JsonParser PUBLIC include)
 
-add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
+# !!! Explicitely tell cmake to build the test or demo if needed !!!
+option(BUILD_JSONPARSER_DEMO "Build the demo executable" OFF)
+option(BUILD_JSONPARSER_TESTS "Build test + dependent libs" OFF)
 
-# Add a target for the demo program (main.cpp)
-add_executable(${PROJECT_NAME}_DEMO demo/main.cpp)
+if(BUILD_JSONPARSER_DEMO)
+    # Add a target for the demo program (main.cpp)
+    message(STATUS "Building JsonParser Demo Executable...")
+    add_executable(JsonParser_DEMO demo/main.cpp)
+    target_link_libraries(JsonParser_DEMO JsonParser)
+endif()
 
-target_include_directories(${PROJECT_NAME}_DEMO PRIVATE src)
+if(BUILD_JSONPARSER_TESTS)
+    message(STATUS "Building JsonParser Test Executable...")
+    # Test configs
+    enable_testing()
 
-target_link_libraries(${PROJECT_NAME}_DEMO ${PROJECT_NAME})
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.15.2
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
 
-enable_testing()
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
 
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.2
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
+    file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+    add_executable(JsonParser_TESTS ${TEST_SOURCES})
+    target_link_libraries(JsonParser_TESTS JsonParser GTest::gtest_main)
 
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-
-file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
-
-add_executable(${PROJECT_NAME}_TESTS ${TEST_SOURCES})
-
-target_include_directories(${PROJECT_NAME}_TESTS PRIVATE src)
-
-target_link_libraries(${PROJECT_NAME}_TESTS ${PROJECT_NAME} GTest::gtest_main)
-
-include(GoogleTest)
-gtest_discover_tests(${PROJECT_NAME}_TESTS)
+    include(GoogleTest)
+    gtest_discover_tests(JsonParser_TESTS)
+endif()
