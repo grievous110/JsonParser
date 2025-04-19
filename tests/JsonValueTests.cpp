@@ -123,7 +123,7 @@ TEST(JsonValueTests, OperatorAccessArray) {
     EXPECT_EQ(value[0].toInt(), 1);
     EXPECT_NO_THROW(value[2]);
     EXPECT_EQ(value[2].toInt(), 3);
-    EXPECT_THROW(value[10], std::out_of_range);
+    EXPECT_THROW(value.at(10), std::out_of_range);
 }
 
 TEST(JsonValueTests, OperatorReassignObject) {
