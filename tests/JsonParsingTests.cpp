@@ -374,92 +374,92 @@ TEST(JsonParsingTests, ParseValidJson_ValidNumbers) {
     // Simple integer
     validJson = "{\"key\": 123}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_EQ(result.getValue("key").toInt(), 123);
+    EXPECT_EQ(result.at("key").toInt(), 123);
 
     // Simple negative integer
     validJson = "{\"key\": -123}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_EQ(result.getValue("key").toInt(), -123);
+    EXPECT_EQ(result.at("key").toInt(), -123);
 
     // Simple floating-point number
     validJson = "{\"key\": 123.456}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 123.456);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 123.456);
 
     // Negative floating-point number
     validJson = "{\"key\": -123.456}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), -123.456);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), -123.456);
 
     // Zero as integer
     validJson = "{\"key\": 0}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_EQ(result.getValue("key").toInt(), 0);
+    EXPECT_EQ(result.at("key").toInt(), 0);
 
     // Zero as floating-point
     validJson = "{\"key\": 0.0}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 0.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 0.0);
 
     // Positive exponent
     validJson = "{\"key\": 1.23e3}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 1230.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 1230.0);
 
     // Negative exponent
     validJson = "{\"key\": 1.23e-3}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 0.00123);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 0.00123);
 
     // Integer with exponent
     validJson = "{\"key\": 123e2}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 12300.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 12300.0);
 
     // Negative integer with exponent
     validJson = "{\"key\": -123E2}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), -12300.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), -12300.0);
 
     // Fractional number with exponent
     validJson = "{\"key\": 1.0e2}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 100.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 100.0);
 
     // Small fractional number with negative exponent
     validJson = "{\"key\": 1.0e-2}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 0.01);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 0.01);
 
     // Small fractional number with positive exponent
     validJson = "{\"key\": 1.0E2}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 100.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 100.0);
 
     // Zero with exponent
     validJson = "{\"key\": 0e10}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 0.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 0.0);
 
     // Large number in scientific notation
     validJson = "{\"key\": 6.022e23}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 6.022e23);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 6.022e23);
 
     // Small number in scientific notation
     validJson = "{\"key\": 6.022e-23}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 6.022e-23);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 6.022e-23);
 
     // Fractional number without exponent
     validJson = "{\"key\": 0.123}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 0.123);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 0.123);
 
     // Integer with fractional part as `.0`
     validJson = "{\"key\": 123.0}";
     EXPECT_NO_THROW(result = parseJson(validJson)) << "Failed to parse: " << validJson;
-    EXPECT_DOUBLE_EQ(result.getValue("key").toDouble(), 123.0);
+    EXPECT_DOUBLE_EQ(result.at("key").toDouble(), 123.0);
 }
 
 TEST(JsonParsingTests, ParseInvalidJson_CompleteGarbage) {

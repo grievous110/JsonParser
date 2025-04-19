@@ -97,13 +97,22 @@ TEST(JsonValueTests, ComparisonOperators) {
     EXPECT_NE(val1, val3);
 }
 
-TEST(JsonValueTests, OperatorAccessObject) {
+TEST(JsonValueTests, OperatorAccessNonConstObject) {
     JsonObject obj = {{"key", 42}};
     JsonValue value(obj);
 
     EXPECT_NO_THROW(value["key"]);
     EXPECT_EQ(value["key"].toInt(), 42);
-    EXPECT_TRUE(value["nonexistent"].isNull());
+    EXPECT_TRUE(value["nonexistent"].isNull()); // Can infer default constructed on non const
+}
+
+TEST(JsonValueTests, OperatorAccessConstObject) {
+    JsonObject obj = {{"key", 42}};
+    const JsonValue value(obj);
+
+    EXPECT_NO_THROW(value["key"]);
+    EXPECT_EQ(value["key"].toInt(), 42);
+    EXPECT_THROW(value["nonexistent"], std::out_of_range); // Cannot infer default constructed on const
 }
 
 TEST(JsonValueTests, OperatorAccessArray) {

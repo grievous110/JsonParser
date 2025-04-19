@@ -534,26 +534,70 @@ const Json::JsonArray& Json::JsonValue::toArray() const {
     return *a_value;
 }
 
-Json::JsonValue& Json::JsonValue::getValue(const std::string& key) {
+std::string& Json::JsonValue::toString() {
+    if (!isString())
+        throw Json::JsonTypeException("Cannot cast to C++ STRING because the underlying type is " + jsonTypeToString(m_type));
+    return *s_value;
+}
+
+Json::JsonObject& Json::JsonValue::toObject() {
+    if (!isObject())
+        throw Json::JsonTypeException("Cannot cast to C++ OBJECT because the underlying type is " + jsonTypeToString(m_type));
+    return *o_value;
+}
+
+Json::JsonArray& Json::JsonValue::toArray() {
+    if (!isArray())
+        throw Json::JsonTypeException("Cannot cast to C++ ARRAY because the underlying type is " + jsonTypeToString(m_type));
+    return *a_value;
+}
+
+const Json::JsonValue &Json::JsonValue::at(const std::string& key) const {
+    if (!isObject())
+        throw Json::JsonTypeException("Accessing key in non-object type");
+    return static_cast<const Json::JsonObject*>(o_value)->at(key);
+}
+
+const Json::JsonValue& Json::JsonValue::at(size_t index) const {
+    if (!isArray())
+        throw Json::JsonTypeException("Accessing index in non-array type");
+    return static_cast<const Json::JsonArray*>(a_value)->at(index);
+}
+
+Json::JsonValue& Json::JsonValue::at(const std::string& key) {
+    if (!isObject())
+        throw Json::JsonTypeException("Accessing key in non-object type");
+    return o_value->at(key);
+}
+
+Json::JsonValue& Json::JsonValue::at(size_t index) {
+    if (!isArray())
+        throw Json::JsonTypeException("Accessing index in non-array type");
+    return a_value->at(index);
+}
+
+const Json::JsonValue& Json::JsonValue::operator[](const std::string& key) const {
+    if (!isObject())
+        throw Json::JsonTypeException("Accessing key in non-object type");
+    return static_cast<const Json::JsonObject*>(o_value)->at(key);
+}
+
+const Json::JsonValue& Json::JsonValue::operator[](size_t index) const {
+    if (!isArray())
+        throw Json::JsonTypeException("Accessing index in non-array type");
+    return static_cast<const Json::JsonArray&>(*a_value)[index];
+}
+
+Json::JsonValue& Json::JsonValue::operator[](const std::string& key) {
     if (!isObject())
         throw Json::JsonTypeException("Accessing key in non-object type");
     return (*o_value)[key];
 }
 
-Json::JsonValue& Json::JsonValue::getValue(size_t index) {
+Json::JsonValue& Json::JsonValue::operator[](size_t index) {
     if (!isArray())
         throw Json::JsonTypeException("Accessing index in non-array type");
-    if (index >= a_value->size())
-        throw std::out_of_range("Index out of range in JsonArray");
     return (*a_value)[index];
-}
-
-Json::JsonValue& Json::JsonValue::operator[](const std::string& key) {
-    return getValue(key);
-}
-
-Json::JsonValue& Json::JsonValue::operator[](size_t index) {
-    return getValue(index);
 }
 
 bool Json::JsonValue::operator==(const Json::JsonValue& other) const {

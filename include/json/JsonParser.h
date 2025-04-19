@@ -86,7 +86,7 @@ namespace Json {
         inline bool isNull() const noexcept { return m_type == JsonType::Null; }
         bool isEmpty() const;
 
-        // Converter methods might throw JsonTypeException when casting to the wrong type
+        // Cast methods might throw JsonTypeException when casting to the wrong type
         bool toBool() const;
         int toInt() const;
         double toDouble() const;
@@ -94,10 +94,21 @@ namespace Json {
         const JsonObject& toObject() const;
         const JsonArray& toArray() const;
 
-        JsonValue& getValue(const std::string& key);
-        JsonValue& getValue(size_t index);
+        // Read / Write casts
+        std::string& toString();
+        JsonObject& toObject();
+        JsonArray& toArray();
 
-        JsonValue& operator[](const std::string& key);
+        // Safe accessors (bounds checking + type checking)
+        const JsonValue& at(const std::string& key) const;
+        const JsonValue& at(size_t index) const;
+        JsonValue& at(const std::string& key);
+        JsonValue& at(size_t index);
+
+        // Unsafe accessors (no bounds checking + type checking)
+        const JsonValue& operator[](const std::string& key) const; // Throws error when accessing non existent one
+        const JsonValue& operator[](size_t index) const;
+        JsonValue& operator[](const std::string& key); // Infers default value if non existent value is accessed
         JsonValue& operator[](size_t index);
 
         bool operator==(const JsonValue& other) const;
